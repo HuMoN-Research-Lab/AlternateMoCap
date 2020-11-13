@@ -28,11 +28,13 @@ def camPreview(previewName, camID, filePath):
     flag = False
     cv2.namedWindow(previewName)
     cam = cv2.VideoCapture(camID,cv2.CAP_DSHOW)
-    cam.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-    cam.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+    resWidth = 1920
+    resHeight = 1080
+    cam.set(cv2.CAP_PROP_FRAME_WIDTH, resWidth)
+    cam.set(cv2.CAP_PROP_FRAME_HEIGHT, resHeight)
     fourcc = cv2.VideoWriter_fourcc(*'X264')
     #out = cv2.VideoWriter('C:/Users/Rontc/Documents/HumonLab/framerate/test.mp4',fourcc, 30.0, (640,480))
-    out = cv2.VideoWriter(filePath,fourcc, 25.0, (1280,720))
+    out = cv2.VideoWriter(filePath,fourcc, 25.0, (resWidth,resHeight))
     timestamps = []
     #print(timestamps,"printing ts1")
     if cam.isOpened():

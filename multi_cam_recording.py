@@ -27,10 +27,12 @@ def camPreview(previewName, camID, filePath):
     global flag 
     flag = False
     cv2.namedWindow(previewName)
-    cam = cv2.VideoCapture(camID)
+    cam = cv2.VideoCapture(camID,cv2.CAP_DSHOW)
+    cam.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+    cam.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
     fourcc = cv2.VideoWriter_fourcc(*'X264')
     #out = cv2.VideoWriter('C:/Users/Rontc/Documents/HumonLab/framerate/test.mp4',fourcc, 30.0, (640,480))
-    out = cv2.VideoWriter(filePath,fourcc, 25.0, (640,480))
+    out = cv2.VideoWriter(filePath,fourcc, 25.0, (1280,720))
     timestamps = []
     #print(timestamps,"printing ts1")
     if cam.isOpened():
@@ -104,7 +106,7 @@ v = np.array(cam4_list)
 a = ({"Camera1":x, "Camera2":y, "Camera3":z, "Camera4":v})
 df = pd.DataFrame.from_dict(a, orient = 'index')
 df.transpose()
-df.to_csv(r"C:\Users\Rontc\Documents\HumonLab\alternate_mocap\spacing_13.csv".csv")
+df.to_csv(r"C:\Users\Rontc\Documents\HumonLab\alternate_mocap\spacing_13.csv")
 
 #test = np.row_stack((x, y))#
 #p.savez('test_now.csv', x,y)

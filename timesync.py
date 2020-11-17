@@ -116,17 +116,5 @@ def mastersync(begin,end,filename):
     
     
     
-    """
-    from sklearn.neighbors import NearestNeighbors
-    
-    neigh = NearestNeighbors(n_neighbors=1)
-    
-    neigh.fit(cam1)
-    neigh.kneighbors(cam2, 1, return_distance=False)
-    #neigh.fit([cam1,cam2,cam3,cam4])
-    #print(chck)
-    
-    """
-    
-ft,tt,fr = mastersync(10,120,'d_show_2_low.csv')
+ft,tt,fr = mastersync(10,120,'d_show_2_low.csv') #insert CSV file name created by multi_cam_recording here
 print("fps:",fr)

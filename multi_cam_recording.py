@@ -63,8 +63,8 @@ def camPreview(previewName, camID, filePath):
  
 beginTime = time.time()
 # Create threads as follows, change camID as needed
-thread1 = camThread("Camera 1", 0, 'test1.mp4')
-thread2 = camThread("Camera 2", 1, 'test2.mp4')
+thread1 = camThread("Camera 1", 1, 'test1.mp4')
+thread2 = camThread("Camera 2", 2, 'test2.mp4')
 thread3 = camThread("Camera 3", 3, 'test3.mp4')
 thread4 = camThread("Camera 4", 4, 'test4.mp4')
 #thread3 = camThread("Camera 3", 2)
@@ -108,7 +108,7 @@ v = np.array(cam4_list)
 a = ({"Camera1":x, "Camera2":y, "Camera3":z, "Camera4":v})
 df = pd.DataFrame.from_dict(a, orient = 'index')
 df.transpose()
-df.to_csv(r"C:\Users\Rontc\Documents\HumonLab\alternate_mocap\spacing_13.csv")
+df.to_csv(r"C:\Users\Rontc\Documents\HumonLab\alternate_mocap\v2\test1_11_16")
 
 #test = np.row_stack((x, y))#
 #p.savez('test_now.csv', x,y)

@@ -34,10 +34,13 @@ def mastersync(begin,end,filename):
     #begin = 9
     #end = 50
     rate_arr= []
+    cam_names = ["Cam A","Cam B","Cam C","Cam D"]
+    n = 0;
     for x in camera:
       ss = closeNeighb(x,begin)
       es = closeNeighb(x,end)
-      print(es,ss)
+      print("using frames:", ss,"-",es,"for",cam_names[n])
+      n +=1
       int = x[ss:es]
       test = np.mean(np.diff(int))
       rate_arr.append(test)
@@ -54,7 +57,7 @@ def mastersync(begin,end,filename):
     
     #framelist = [];
     count = 0
-    
+    n = 0;
     for y in camera:
         si = [];
         sf =[];
@@ -69,7 +72,7 @@ def mastersync(begin,end,filename):
             si.append(si_pt)
             sf = y[si]
             
-        print("starting detection")
+        print("starting detection:",cam_names[n])
         framelist = np.column_stack((framelist,si))
         timelist = np.column_stack((timelist,sf))
     
@@ -95,8 +98,11 @@ def mastersync(begin,end,filename):
             elif dis > 1:
                del_count += 1
             else:
+                
                 print("something else happened")
-        print(del_count,buf_count)
+        print("deleted frames:",del_count)
+        print("buffered frames:",buf_count)
+        n +=1
         
         
     frameTable = pd.DataFrame(framelist)   
@@ -104,9 +110,9 @@ def mastersync(begin,end,filename):
     frameTable.columns = col_list
     timeTable = pd.DataFrame(timelist)
     timeTable.columns = col_list
-    
+    framerate = 1/intvl
     #print(frameTable,timeTable)
-    return frameTable,timeTable
+    return frameTable,timeTable,framerate
     
     
     
@@ -122,4 +128,5 @@ def mastersync(begin,end,filename):
     
     """
     
-ft,tt = mastersync(9,50,'four_test_2.csv')
+ft,tt,fr = mastersync(10,120,'d_show_2_low.csv')
+print("fps:",fr)

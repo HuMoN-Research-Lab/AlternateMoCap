@@ -116,5 +116,5 @@ def mastersync(begin,end,filename):
     
     
     
-ft,tt,fr = mastersync(10,120,'d_show_2_low.csv') #insert CSV file name created by multi_cam_recording here
-print("fps:",fr)
+#ft,tt,fr = mastersync(10,120,'d_show_2_low.csv') #insert CSV file name created by multi_cam_recording here
+#print("fps:",fr)

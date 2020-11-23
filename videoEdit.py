@@ -6,7 +6,7 @@ Created on Wed Nov 18 12:29:22 2020
 """
 import cv2
 import numpy as np
-from timesync import mastersync
+#from timesync import mastersync
 
 
 def videoEdit(vidList,out_base,ft):
@@ -18,7 +18,7 @@ def videoEdit(vidList,out_base,ft):
         frametable = ft[cam] #grab the frames needed for that camera
         success, image = cap.read() #start reading frames
         fourcc = cv2.VideoWriter_fourcc(*'X264')
-        out_path = cam+'_'+out_base+'.mp4' #create an output path for the function
+        out_path = cam+'_'+out_base #create an output path for the function
         out = cv2.VideoWriter(out_path, fourcc, 25.0, (640,480)) #change resolution as needed
         for frame in frametable: #start looking through the frames we need
             if frame == -1: #this is a buffer frame
@@ -44,12 +44,12 @@ def videoEdit(vidList,out_base,ft):
 #3 Choose a file name for your four output videos. They'll save as CamA_[insert file name], CamB_[insert file name] and so on
 #4 Run the video edit function
 
-
+"""
 ft,tt,fr = mastersync(4,15,'test1_11_18.csv') #enter the starting time, ending time, and CSV file name
 vidList = ['test1.mp4','test2.mp4','test3.mp4','test4.mp4'] 
 path = 'test1_11_18'
 print()
 print('Starting editing')
 videoEdit(vidList,path,ft)
-
+"""
     

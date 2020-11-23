@@ -14,6 +14,7 @@ import tkinter as tk
 #import tkMessageBox
 from timesync import mastersync
 from videoEdit import videoEdit
+import sys 
 
 global beginTime
 
@@ -68,17 +69,17 @@ def camPreview(previewName, camID, filePath):
 
 #Edit the options in lines 70-73 as needed (change csvName and clippedName to prevent overwriting files)
 
-csv_path = r'C:\Users\Rontc\Documents\HumonLab\alternate_mocap\v2\\' #add your file path to save a CSV as r'filepath\', and for right now **include a second backslash at the end of your path**
-csvName = 'test4_11_19.csv' #create a filename for the output CSV
-clippedName = 'test4_11_19.mp4' #create a base filename for the four edited videos (camera identifiers will be appended onto this base filename)
+csv_path = r'C:\Users\Rontc\Documents\GitHub\AlternateMoCap\\' #add your file path to save a CSV as r'filepath\', and for right now **include a second backslash at the end of your path**
+csvName = 'test2_11_23.csv' #create a filename for the output CSV
+clippedName = 'test2_11_23.mp4' #create a base filename for the four edited videos (camera identifiers will be appended onto this base filename)
 rawList = ['cam1.mp4','cam2.mp4','cam3.mp4','cam4.mp4'] #create filenames for your raw videos,in order of camera
 
 
 
 beginTime = time.time()
 # Create threads as follows, change camID as needed
-thread1 = camThread("Camera 1", 0, rawList[0])
-thread2 = camThread("Camera 2", 1, rawList[1])
+thread1 = camThread("Camera 1", 1, rawList[0])
+thread2 = camThread("Camera 2", 2, rawList[1])
 thread3 = camThread("Camera 3", 3, rawList[2])
 thread4 = camThread("Camera 4", 4, rawList[3])
 
@@ -123,6 +124,7 @@ df = pd.DataFrame.from_dict(a, orient = 'index')
 df.transpose()
 df.to_csv(csv_path+csvName) #change this line to where you want to save a CSV file
 
+"""
 top = tk.Tk()
 message = tk.Label(text="Here's a look at your start/end times")
 start_end = df.iloc[0:4,[0,-1]]
@@ -160,14 +162,31 @@ button_calc.pack()
 
 
 top.mainloop()
-
+"""
 #intvl = pickle.loads(intDump)
 #print(user_start,user_end)
 
 
 
 #print(user_start,user_end)
-ft,tt,fr = mastersync(user_start,user_end,csvName) #enter the starting time, ending time, and CSV file name
+ft,tt,fr,rd = mastersync(csvName) #enter the starting time, ending time, and CSV file name
+
+top = tk.Tk()
+def destroy():
+    top.destroy()
+def stop():
+    top.destroy()
+    sys.exit("Quitting Program")
+label = tk.Label(text = rd)
+button_go = tk.Button(top, text="Proceed", command= destroy)
+button_stop = tk.Button(top,text ='Quit',command = stop)
+
+label.pack()
+button_go.pack()
+button_stop.pack()
+top.mainloop()
+
+
 
 print()
 print('Starting editing')

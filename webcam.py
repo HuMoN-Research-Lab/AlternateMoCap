@@ -66,8 +66,9 @@ def camPreview(previewName, camID, filePath):
             break
     cv2.destroyWindow(previewName)
 
-def mastersync(filename):    
-
+def mastersync(filename,camNum,camNames):    
+    import pandas as pd
+    import numpy as np
 
     def closeNeighb(camera,point):
         idx = (np.abs(camera - point)).argmin() 
@@ -78,46 +79,57 @@ def mastersync(filename):
     
     arr = df.to_numpy()
     #print(arr)
+    stampList = []
+    beginList =[]
+    endList = []
+    for x in camNum:
+        cam = arr[x,1:]
+        start = cam[0]
+        #print(begin)
+       
+        stop_pt = -1
+        stop = cam[stop_pt]
+        while np.isnan(stop):
+            stop_pt -= 1
+            stop = cam[stop_pt]
+            
+            
+        stampList.append(cam)
+        beginList.append(start)
+        endList.append(stop)
+
     
-    cam1 = arr[0,1:]
+    #print(beginList)
     
-    cam2 = arr[1,1:]
-    
-    cam3 = arr[2,1:]
-    
-    cam4 = arr[3,1:]
-    
-    begin = np.ceil(min(cam1[0],cam2[0],cam3[0],cam4[0]))
-    end = np.floor(np.nanmax([cam1[-1],cam2[-1],cam3[-1],cam4[-1]]))
-    print('end',cam1[-1],cam2[-1],cam3[-1],cam4[-1])
+    begin = np.ceil(max(beginList))
+    end = np.floor(min(endList))
+    print('end',endList)
     print('test',begin,end)    
-    #camera = arr[:,1:]
-    camera = [cam1,cam2,cam3,cam4]
-    #print(camera)
-        
-    #begin = 9
-    #end = 50
+
+    #camera = [cam1,cam2,cam3,cam4]
+    
     rate_arr= []
-    cam_names = ["Cam A","Cam B","Cam C","Cam D"]
+    
+  
     n = 0;
-    for x in camera:
-      ss = closeNeighb(x,begin)
-      es = closeNeighb(x,end)
-      print("using frames:", ss,"-",es,"for",cam_names[n])
+    for x in camNum:
+      current_cam = stampList[x]
+      ss = closeNeighb(current_cam,begin)
+      es = closeNeighb(current_cam,end)
+      print("using frames:", ss,"-",es,"for",camNames[n])
       n +=1
-      int = x[ss:es]
-      test = np.mean(np.diff(int))
+      intl = current_cam[ss:es]
+      test = np.mean(np.diff(intl))
       rate_arr.append(test)
     
     intvl = np.mean(rate_arr)
     mt = np.arange(begin,end,intvl)
-    #ctest = [cam1]
-    
+   
+   
     si = [];
     framelist = mt
     timelist = mt
-    #idx_start = closeNeighb(cam1,mt[0])
-    #idx_end = closeNeighb(cam1,mt[-1])
+ 
     del_num= [];
     buf_num= [];
     buf_per_list = [];
@@ -125,7 +137,9 @@ def mastersync(filename):
     #framelist = [];
     count = 0
     n = 0;
-    for y in camera:
+
+    for y in camNum:
+        this_cam = stampList[y]
         si = [];
         sf =[];
     
@@ -135,11 +149,11 @@ def mastersync(filename):
         #print(idx_start)
         #cam_new = x[idx_start:idx_end]
         for z in mt:
-            si_pt = closeNeighb(y, z)
+            si_pt = closeNeighb(this_cam, z)
             si.append(si_pt)
-            sf = y[si]
+            sf = this_cam[si]
             
-        print("starting detection:",cam_names[n])
+        print("starting detection:",camNames[n])
         framelist = np.column_stack((framelist,si))
         timelist = np.column_stack((timelist,sf))
     
@@ -182,15 +196,16 @@ def mastersync(filename):
         
         
     frameTable = pd.DataFrame(framelist)   
-    col_list = ['Master Timeline','CamA','CamB','CamC','CamD']
+    col_list = ['Master Timeline'] + camNames
     frameTable.columns = col_list
     timeTable = pd.DataFrame(timelist)
     timeTable.columns = col_list
     framerate = 1/intvl
-    results = {'Cam':['CamA','CamB','CamC','CamD'],'#Del':del_num,'%Del':del_per_list,'#Buf':buf_num,'%Buf':buf_per_list}
+    results = {'Cam':camNames,'#Del':del_num,'%Del':del_per_list,'#Buf':buf_num,'%Buf':buf_per_list}
     res_d = pd.DataFrame(results,columns = ['Cam','#Del','%Del','#Buf','%Buf'])
     #print(frameTable,timeTable)
     return frameTable,timeTable,framerate,res_d
+ 
 
 def videoEdit(vidList,out_base,ft):
     camList = list(ft.columns[1:len(vidList)+1]) #grab the camera identifiers from the data frame 
@@ -216,64 +231,68 @@ def videoEdit(vidList,out_base,ft):
         out.release()
         print('Saved '+out_path)
         print()
-
-csv_path = r'C:\Users\Rontc\Documents\HumonLab\alternate_mocap\\' #add your file path to save a CSV as r'filepath\', and for right now **include a second backslash at the end of your path**
-csvName = 'test1_11_30.csv' #create a filename for the output CSV
-clippedName = 'test1_11_30.mp4' #create a base filename for the four edited videos (camera identifiers will be appended onto this base filename)
-rawList = ['cam1.mp4','cam2.mp4','cam3.mp4','cam4.mp4'] #create filenames for your raw videos,in order of camera
+        
+#instructions
+#1) Set n_cam
+#2) Make sure to add the camera inputs for each webcam you add in iCam        
+n_cam= 4 #number of webcams being used
+iCam = [1,2,3,4] #the USB input for each camera that you're using 
+csv_path = r'C:\Users\Rontc\Documents\GitHub\AlternateMoCap\\' #add your file path to save a CSV as r'filepath\', and for right now **include a second backslash at the end of your path**
+csvName = 'test7_12_3.csv' #create a filename for the output CSV
+clippedName = 'test7_12_3.mp4' #create a base filename for the four edited videos (camera identifiers will be appended onto this base filename)
+#rawList = ['cam1.mp4','cam2.mp4','cam3.mp4','cam4.mp4'] #create filenames for your raw videos,in order of camera
 
 
 
 beginTime = time.time()
-# Create threads as follows, change camID as needed
-thread1 = camThread("Camera 1", 1, rawList[0])
-thread2 = camThread("Camera 2", 2, rawList[1])
-thread3 = camThread("Camera 3", 3, rawList[2])
-thread4 = camThread("Camera 4", 4, rawList[3])
+
+camNum = range(n_cam)
 
 
-thread1.start()
-thread2.start()
-thread3.start()
-thread4.start()
-#thread3.start()
-print()
-print("Active threads", threading.activeCount())
+names = []
+
+camID = []
+for x in camNum:
+    ids = 'Cam{}'.format(x+1)
+    camID.append(ids)
+    name = 'cam{}.mp4'.format(x+1)
+    names.append(name)    
+
+threads = []
 
 
-thread1.join()
-thread2.join()
-thread3.join()
-thread4.join()
+for n in camNum:
+    t = camThread(camID[n],iCam[n],names[n])
+    t.start()
+   
+    threads.append(t)
+
+for t in threads:
+    t.join()
 
 print('finished')
 
-with open("Camera 1", 'rb') as f:
-    cam1_list = pickle.load(f)
+dataList = []
+
+for e in camNum:
+  with open(camID[e], 'rb') as f:
+    cam_list = pickle.load(f)
+    dataList.append(cam_list)
+
+a = {}    
+
+id_and_time = zip(camID,dataList)  
+
+for cam,data in id_and_time:
+    a[cam] = np.array(data)
+
     
-    
-with open("Camera 2", 'rb') as f:
-    cam2_list = pickle.load(f)    
-    
-with open("Camera 3", 'rb') as f:
-    cam3_list = pickle.load(f)    
-
-with open("Camera 4", 'rb') as f:
-    cam4_list = pickle.load(f)        
-
-
-x = np.array(cam1_list)
-y = np.array(cam2_list)
-z = np.array(cam3_list)
-v = np.array(cam4_list)
-
-a = ({"Camera1":x, "Camera2":y, "Camera3":z, "Camera4":v})
 df = pd.DataFrame.from_dict(a, orient = 'index')
 df.transpose()
 df.to_csv(csv_path+csvName) #change this line to where you want to save a CSV file
 
 
-ft,tt,fr,rd = mastersync(csvName) #enter the starting time, ending time, and CSV file name
+ft,tt,fr,rd = mastersync(csvName,camNum,camID) #enter the starting time, ending time, and CSV file name
 
 top = tk.Tk()
 def destroy():
@@ -294,7 +313,7 @@ top.mainloop()
 
 print()
 print('Starting editing')
-videoEdit(rawList,clippedName,ft)
+videoEdit(names,clippedName,ft)
 
 
 print('all done')

@@ -19,20 +19,26 @@ import sys
 global beginTime
 
 
-
-class camThread(threading.Thread):
-    def __init__(self, previewName, camID,filePath):
+#create a camera object that can be threaded
+class camThread(threading.Thread): 
+    def __init__(self, previewName, camID,filePath,beginTime):
         threading.Thread.__init__(self)
         self.previewName = previewName
         self.camID = camID
         self.filePath = filePath
+        self.beginTime = beginTime
     def run(self):
         print("Starting " + self.previewName)
-        camPreview(self.previewName, self.camID, self.filePath)
+        camPreview(self.previewName, self.camID, self.filePath,self.beginTime)
 
-def camPreview(previewName, camID, filePath):
+#the recording function that each threaded camera object runs
+def camPreview(previewName, camID, filePath,beginTime):
+    #the flag is triggered when the user shuts down one webcam to shut down the rest. 
+    #normally we'd try to avoid global variables, but in this case it's 
+    #necessary, since each webcam runs as it's own object.
     global flag 
-    flag = False
+    flag = False 
+    
     cv2.namedWindow(previewName)
     cam = cv2.VideoCapture(camID,cv2.CAP_DSHOW)
     resWidth = 640
@@ -40,53 +46,53 @@ def camPreview(previewName, camID, filePath):
     cam.set(cv2.CAP_PROP_FRAME_WIDTH, resWidth)
     cam.set(cv2.CAP_PROP_FRAME_HEIGHT, resHeight)
     fourcc = cv2.VideoWriter_fourcc(*'X264')
-    #out = cv2.VideoWriter('C:/Users/Rontc/Documents/HumonLab/framerate/test.mp4',fourcc, 30.0, (640,480))
+
     out = cv2.VideoWriter(filePath,fourcc, 25.0, (resWidth,resHeight))
-    timestamps = []
-    #print(timestamps,"printing ts1")
+    timestamps = [] #holds the timestamps 
+
     if cam.isOpened():
         rval, frame = cam.read()
     else:
         rval = False
 
     while rval:
-        if flag:
+        if flag: #when the flag is triggered, stop recording and dump the data
             with open(previewName, 'wb') as f:
                pickle.dump(timestamps, f)
             break
+        
         cv2.imshow(previewName, frame)
         rval, frame = cam.read()
         out.write(frame)
-        timestamps.append(time.time()-beginTime)
+        timestamps.append(time.time()-beginTime) #add each timestamp to the list
         key = cv2.waitKey(20)
         if key == 27:  # exit on ESC
-            flag = True 
+            flag = True #set flag to true to shut down all other webcams
             with open(previewName, 'wb') as f:
-               pickle.dump(timestamps, f)
+               pickle.dump(timestamps, f) #dump the data
             break
     cv2.destroyWindow(previewName)
 
+#this is how we sync our time frames, based on our recorded timestamps
 def mastersync(filename,camNum,camNames):    
-    import pandas as pd
-    import numpy as np
-
-    def closeNeighb(camera,point):
+   
+#this function is how we find the closest frame to each time point
+    def closeNeighb(camera,point): 
         idx = (np.abs(camera - point)).argmin() 
         return idx
     
-    df = pd.read_csv (filename)
-    #print (df)
-    
+    df = pd.read_csv (filename) #read our CSV file 
+  
     arr = df.to_numpy()
     #print(arr)
-    stampList = []
-    beginList =[]
-    endList = []
-    for x in camNum:
-        cam = arr[x,1:]
-        start = cam[0]
-        #print(begin)
+    stampList = [] #store timeframes for each camera
+    beginList =[] #empty list to store the start times for each camera
+    endList = [] #empty list to store the end times for each camera
+    for x in camNum: #for each camera that we have
+        cam = arr[x,1:] #slice out the data for just that camera
+        start = cam[0] #set start point
        
+     #this section below find the last non-NAN value for each camera   
         stop_pt = -1
         stop = cam[stop_pt]
         while np.isnan(stop):
@@ -94,93 +100,93 @@ def mastersync(filename,camNum,camNames):
             stop = cam[stop_pt]
             
             
-        stampList.append(cam)
-        beginList.append(start)
+        stampList.append(cam) 
+        beginList.append(start) 
         endList.append(stop)
 
     
-    #print(beginList)
+  
     
-    begin = np.ceil(max(beginList))
-    end = np.floor(min(endList))
-    print('end',endList)
-    print('test',begin,end)    
+    #this section auto-finds the start and end points for our master timeline to the nearest second
+    begin = np.ceil(max(beginList)) #find where slowest camera started, round up, use that as the start point
+    end = np.floor(min(endList)) #find where the fastest camera ended, round down, use that as the end point
+    #print('end',endList)
+    #print('test',begin,end)    
 
-    #camera = [cam1,cam2,cam3,cam4]
     
-    rate_arr= []
+    int_arr= [] #list for storing frame rates for each camera
     
   
-    n = 0;
+    n = 0; #counter for going through camera names
     for x in camNum:
-      current_cam = stampList[x]
-      ss = closeNeighb(current_cam,begin)
+      current_cam = stampList[x]  
+      #finds the closest point in each camera to the start and end points of our timeline
+      ss = closeNeighb(current_cam,begin) 
       es = closeNeighb(current_cam,end)
       print("using frames:", ss,"-",es,"for",camNames[n])
       n +=1
-      intl = current_cam[ss:es]
-      test = np.mean(np.diff(intl))
-      rate_arr.append(test)
+      cam_timeline = current_cam[ss:es] #grab the times from start to finish for each camera
+      interval = np.mean(np.diff(cam_timeline)) #calculate the interval between each frame and take the mean 
+      int_arr.append(interval) #add interval to list 
     
-    intvl = np.mean(rate_arr)
-    mt = np.arange(begin,end,intvl)
+    avg_int = np.mean(int_arr) #find the total average interval across all cameras
+    mt = np.arange(begin,end,avg_int) #build a master timeline with the average interval
    
-   
-    si = [];
-    framelist = mt
-    timelist = mt
+    #now we start the syncing process
+  
+    framelist = mt #start a list of frames, with the first row being our master timeline
+    timelist = mt #start a list of timestamps,with the first row being our master timeline
  
-    del_num= [];
-    buf_num= [];
-    buf_per_list = [];
-    del_per_list = [];
-    #framelist = [];
-    count = 0
-    n = 0;
+    del_num= []; #stores number of deleted frames/camera
+    buf_num= []; #stores number of buffered frames/camera
+    buf_per_list = []; #stores percentage of deleted frames/camera
+    del_per_list = []; #stores percentage of buffered frames/camera
+    
+    count = 0 #Keeps track of what frame we're on (I think?)
+    n = 0; #I don't remember why I did this but I'm sure I'll figure it out later
 
     for y in camNum:
         this_cam = stampList[y]
-        si = [];
-        sf =[];
+        st = []; #stored times
+        sf =[]; #stored frames
     
         count += 1
-        #idx_start = closeNeighb(y,mt[0])
-        #idx_end = closeNeighb(y,mt[-1])
-        #print(idx_start)
-        #cam_new = x[idx_start:idx_end]
-        for z in mt:
-            si_pt = closeNeighb(this_cam, z)
-            si.append(si_pt)
-            sf = this_cam[si]
+       
+        for z in mt: #for each point in the master timeline
+            sf_pt = closeNeighb(this_cam, z) #find the closest frame in this camera to each point of the master timeline
+            sf.append(sf_pt) #add that frame to the list
+            st = this_cam[sf] #find the time corresponding to this frame
             
-        print("starting detection:",camNames[n])
-        framelist = np.column_stack((framelist,si))
-        timelist = np.column_stack((timelist,sf))
+        print("starting detection:",camNames[n]) #now to start finding deleted/buffered slides
+        framelist = np.column_stack((framelist,sf)) #update our framelist with our new frames
+        timelist = np.column_stack((timelist,st)) #update our timelist 
     
+        #start counters for the number of buffered and deleted slides
         buf_count = 0;
         del_count = 0;
-     
-        
-        for i in range(0,len(si)-1):
-            dis = si[i+1] - si[i]
-            if dis == 1:
-                None
-            elif dis == 0:
+      
+        for i in range(0,len(sf)-1): 
+            dis = sf[i+1] - sf[i] #find the distance between adjacent frames
+            if dis == 1: #these frames are consecutive, do nothing
+                None 
+            elif dis == 0: #we have a buffered slide
                 buf_count += 1
-                #print("Buffer")
-                frame1 = abs(mt[i]-sf[i])
-                frame2 = abs(mt[i+1]-sf[i])
+                #this section looks at our two timepoints, and finds the which point on the mater timeline is closest 
+                frame1 = abs(mt[i]-st[i])
+                frame2 = abs(mt[i+1]-st[i])
+                #finds which frame is closest, and sets the other frame as a buffer (indicated by the -1)
                 if frame1>frame2:
                  framelist[i,count] = -1
                  timelist[i,count] = -1
                 else:
                  framelist[i+1,count] = -1;
                  timelist[i+1,count] = -1;
-            elif dis > 1:
+            elif dis > 1: #deletion
                del_count += 1
             else:
                 
                 print("something else happened")
+        #update and calculate our percentages and numbers for buffers/deletions
         del_num.append(round(del_count,1))
         buf_num.append(round(buf_count,1))
         print(buf_count,len(framelist))
@@ -194,19 +200,19 @@ def mastersync(filename,camNum,camNames):
         print("buffered frames:",buf_count)
         n +=1
         
-        
+    #create our data frame for both times and frames    
     frameTable = pd.DataFrame(framelist)   
     col_list = ['Master Timeline'] + camNames
     frameTable.columns = col_list
     timeTable = pd.DataFrame(timelist)
     timeTable.columns = col_list
-    framerate = 1/intvl
+    framerate = 1/avg_int #calculates our framerate 
     results = {'Cam':camNames,'#Del':del_num,'%Del':del_per_list,'#Buf':buf_num,'%Buf':buf_per_list}
     res_d = pd.DataFrame(results,columns = ['Cam','#Del','%Del','#Buf','%Buf'])
-    #print(frameTable,timeTable)
+
     return frameTable,timeTable,framerate,res_d
  
-
+#function to trim our videos 
 def videoEdit(vidList,out_base,ft):
     camList = list(ft.columns[1:len(vidList)+1]) #grab the camera identifiers from the data frame 
     for vid,cam in zip(vidList,camList): #iterate in parallel through camera identifiers and matching videos
@@ -232,88 +238,83 @@ def videoEdit(vidList,out_base,ft):
         print('Saved '+out_path)
         print()
         
-#instructions
-#1) Set n_cam
-#2) Make sure to add the camera inputs for each webcam you add in iCam        
-n_cam= 4 #number of webcams being used
-iCam = [1,2,3,4] #the USB input for each camera that you're using 
-csv_path = r'C:\Users\Rontc\Documents\GitHub\AlternateMoCap\\' #add your file path to save a CSV as r'filepath\', and for right now **include a second backslash at the end of your path**
-csvName = 'test7_12_3.csv' #create a filename for the output CSV
-clippedName = 'test7_12_3.mp4' #create a base filename for the four edited videos (camera identifiers will be appended onto this base filename)
-#rawList = ['cam1.mp4','cam2.mp4','cam3.mp4','cam4.mp4'] #create filenames for your raw videos,in order of camera
+       
+#function to run all these above functions together
+def runCams(n_cam,iCam,path,sessionName):
+    csvName = sessionName + '.csv' #create our csv filename
+    clippedName = sessionName + '.mp4' #create our final video names
+    beginTime = time.time()
 
-
-
-beginTime = time.time()
-
-camNum = range(n_cam)
-
-
-names = []
-
-camID = []
-for x in camNum:
-    ids = 'Cam{}'.format(x+1)
-    camID.append(ids)
-    name = 'cam{}.mp4'.format(x+1)
-    names.append(name)    
-
-threads = []
-
-
-for n in camNum:
-    t = camThread(camID[n],iCam[n],names[n])
-    t.start()
-   
-    threads.append(t)
-
-for t in threads:
-    t.join()
-
-print('finished')
-
-dataList = []
-
-for e in camNum:
-  with open(camID[e], 'rb') as f:
-    cam_list = pickle.load(f)
-    dataList.append(cam_list)
-
-a = {}    
-
-id_and_time = zip(camID,dataList)  
-
-for cam,data in id_and_time:
-    a[cam] = np.array(data)
-
+    camNum = range(n_cam) #a range for the number of cameras that we have
+       
+    names = []
     
-df = pd.DataFrame.from_dict(a, orient = 'index')
-df.transpose()
-df.to_csv(csv_path+csvName) #change this line to where you want to save a CSV file
+    camID = []
+    for x in camNum: #create names for each of the initial untrimmed videos 
+        ids = 'Cam{}'.format(x+1)
+        camID.append(ids) #creates IDs for each camera based on the number of cameras entered
+        name = 'cam{}.mp4'.format(x+1)
+        names.append(name)    
+    
+    threads = []
+    
+    for n in camNum: #starts recording video, opens threads for each camera
+        t = camThread(camID[n],iCam[n],names[n],beginTime)
+        t.start()
+       
+        threads.append(t) 
+    
+    for t in threads:
+        t.join() #make sure that one thread ending doesn't immediately end all the others (before they can dump data in a pickle file)
+    
+    print('finished')
+    
+    dataList = [] 
+    
+    for e in camNum: #open the saved pickle file for each camera, and add the timestamps to the dataList list
+      with open(camID[e], 'rb') as f:
+        cam_list = pickle.load(f)
+        dataList.append(cam_list)
+    
+    a = {}  #our dictionary   
+        
+    id_and_time = zip(camID,dataList)  
+    
+    for cam,data in id_and_time:
+        a[cam] = np.array(data)  #create a dictionary that holds the timestamps for each camera 
+    
+        
+    df = pd.DataFrame.from_dict(a, orient = 'index') #create a data frame from this dictionary
+    df.transpose()
+    df.to_csv(path+csvName) #turn dataframe into a CSV
+    
+    
+    ft,tt,fr,rd = mastersync(csvName,camNum,camID) #start the timesync process
+    
+    #this message shows you your percentages and asks if you would like to continue or not. shuts down the program if no
+    top = tk.Tk()
+    def destroy():
+        top.destroy()
+    def stop():
+        top.destroy()
+        sys.exit("Quitting Program")
+    label = tk.Label(text = rd)
+    button_go = tk.Button(top, text="Proceed", command= destroy)
+    button_stop = tk.Button(top,text ='Quit',command = stop)
+    
+    label.pack()
+    button_go.pack()
+    button_stop.pack()
+    top.mainloop()
+    
+    
+    
+    print()
+    print('Starting editing')
+    #start editing the videos 
+    videoEdit(names,clippedName,ft)
+    
+    
+    print('all done')
 
 
-ft,tt,fr,rd = mastersync(csvName,camNum,camID) #enter the starting time, ending time, and CSV file name
-
-top = tk.Tk()
-def destroy():
-    top.destroy()
-def stop():
-    top.destroy()
-    sys.exit("Quitting Program")
-label = tk.Label(text = rd)
-button_go = tk.Button(top, text="Proceed", command= destroy)
-button_stop = tk.Button(top,text ='Quit',command = stop)
-
-label.pack()
-button_go.pack()
-button_stop.pack()
-top.mainloop()
-
-
-
-print()
-print('Starting editing')
-videoEdit(names,clippedName,ft)
-
-
-print('all done')

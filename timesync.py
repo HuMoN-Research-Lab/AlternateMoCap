@@ -19,6 +19,8 @@ def mastersync(filename):
     arr = df.to_numpy()
     #print(arr)
     
+   
+        
     cam1 = arr[0,1:]
     
     cam2 = arr[1,1:]
@@ -38,6 +40,7 @@ def mastersync(filename):
     #begin = 9
     #end = 50
     rate_arr= []
+    
     cam_names = ["Cam A","Cam B","Cam C","Cam D"]
     n = 0;
     for x in camera:
@@ -146,3 +149,6 @@ def mastersync(filename):
     
     """
 
+n_cam= 4
+camNum = range(n_cam)
+g,h,j,k = mastersync('test8_12_1.csv')

@@ -41,8 +41,6 @@ def camPreview(previewName, camID, filePath,beginTime):
     
     cv2.namedWindow(previewName)
     cam = cv2.VideoCapture(camID,cv2.CAP_DSHOW)
-    #if not cam.isOpened():
-    #         raise RuntimeError('No camera found at input '+ str(camID)) 
     resWidth = 640
     resHeight = 480
     cam.set(cv2.CAP_PROP_FRAME_WIDTH, resWidth)
@@ -67,7 +65,6 @@ def camPreview(previewName, camID, filePath,beginTime):
         rval, frame = cam.read()
         out.write(frame)
         timestamps.append(time.time()-beginTime) #add each timestamp to the list
-    
         key = cv2.waitKey(20)
         if key == 27:  # exit on ESC
             flag = True #set flag to true to shut down all other webcams
@@ -243,11 +240,11 @@ def videoEdit(vidList,out_base,ft):
         
        
 #function to run all these above functions together
-def runCams(iCam,path,sessionName):
+def runCams(n_cam,iCam,path,sessionName):
     csvName = sessionName + '.csv' #create our csv filename
     clippedName = sessionName + '.mp4' #create our final video names
     beginTime = time.time()
-    n_cam = len(iCam) #number of cameras 
+
     camNum = range(n_cam) #a range for the number of cameras that we have
        
     names = []
@@ -320,49 +317,4 @@ def runCams(iCam,path,sessionName):
     
     print('all done')
 
-def testDevice(source):
-   cap = cv2.VideoCapture(source,cv2.CAP_DSHOW) 
-   #if cap is None or not cap.isOpened():
-       #print('Warning: unable to open video source: ', source)
-   
-   if cap.isOpened():
-        print('Opened: ',source)
-        #time.sleep(3)
-        cap.release()
-        cv2.destroyAllWindows() 
-        open_cam = source
-        return open_cam
-   else:
-        return None 
 
-def checkCams():
-    open_list = []
-    for x in range(100):        
-       open_c = testDevice(x)
-       if open_c is not None:
-          open_list.append(open_c)
-    return open_list
-       
-class videoSetup(threading.Thread):
-     def __init__(self, camID):
-         self.camID = camID
-         threading.Thread.__init__(self)
-     def run(self):
-        #print("Starting " + self.previewName)
-        self.record()
-     def record(self):
-         camName = "Camera" + str(self.camID)
-         cv2.namedWindow(camName)
-         cap = cv2.VideoCapture(self.camID,cv2.CAP_DSHOW)
-         #if not cap.isOpened():
-          #   raise RuntimeError('No camera found at input '+ str(self.camID)) 
-         while True:
-             ret1,frame1 = cap.read()
-             if ret1 ==True:
-                 cv2.imshow(camName,frame1)
-                 if cv2.waitKey(1) & 0xFF== ord('q'):
-                    break 
-         
-             else:
-                break
-         cv2.destroyWindow(camName)

@@ -10,7 +10,13 @@ import webcam
 #-----------------------------------------------SESSION INFO
 #Step 1: Choose a file path and session name
 path = r'C:\Users\Rontc\Documents\GitHub\AlternateMocap\\' #add your file path to save data as r'filepath\', and for right now **include a second backslash at the end of your path**
-sessionName = 'test2_12_8' #create a session ID for output videos and CSV names
+sessionName = 'test1_12_10' #create a session ID for output videos and CSV names
+exposure = -6
+resWidth = 640
+resHeight = 480
+framerate = 25
+
+paramDict = {'exposure':exposure,"resWidth":resWidth,"resHeight":resHeight,'framerate':framerate}
 
 #-----------------------------------------------DETECTION
 #Step 2: Cam Detection. Set TRUE to see a list of detected cameras and inputs. Set FALSE once you know your inputs
@@ -32,7 +38,7 @@ if cam_setup == True: #don't change this boolean by accident pls
         raise ValueError('Camera input list (setup_inputs) is empty')
     ulist = []
     for x in setup_inputs:
-        u = webcam.videoSetup(x)
+        u = webcam.videoSetup(x,paramDict)
         u.start()
         ulist.append(u)
         
@@ -43,9 +49,9 @@ if cam_setup == True: #don't change this boolean by accident pls
 #Step 4: Set TRUE to start the recording process. 
 #Press ESCAPE to stop the recording process, and continue onto the time-syncing/editing process
 recording = True
-record_inputs = [] #the USB input for each camera that you're using 
+record_inputs = [1,2,3,4] #the USB input for each camera that you're using 
 
 if recording == True:#don't change this boolean by accident pls
     if not record_inputs:
         raise ValueError('Camera input list (record_inputs) is empty')
-    webcam.runCams(record_inputs,path,sessionName) #press ESCAPE to end the recording
+    webcam.runCams(record_inputs,path,sessionName,paramDict) #press ESCAPE to end the recording

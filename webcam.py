@@ -21,18 +21,19 @@ global beginTime
 
 #create a camera object that can be threaded
 class camThread(threading.Thread): 
-    def __init__(self, previewName, camID,filePath,beginTime):
+    def __init__(self, previewName, camID,filePath,beginTime,parameterDictionary):
         threading.Thread.__init__(self)
         self.previewName = previewName
         self.camID = camID
         self.filePath = filePath
         self.beginTime = beginTime
+        self.parameterDictionary = parameterDictionary
     def run(self):
         print("Starting " + self.previewName)
-        camPreview(self.previewName, self.camID, self.filePath,self.beginTime)
+        camPreview(self.previewName, self.camID, self.filePath,self.beginTime,self.parameterDictionary)
 
 #the recording function that each threaded camera object runs
-def camPreview(previewName, camID, filePath,beginTime):
+def camPreview(previewName, camID, filePath,beginTime,parameterDictionary):
     #the flag is triggered when the user shuts down one webcam to shut down the rest. 
     #normally we'd try to avoid global variables, but in this case it's 
     #necessary, since each webcam runs as it's own object.
@@ -43,13 +44,19 @@ def camPreview(previewName, camID, filePath,beginTime):
     cam = cv2.VideoCapture(camID,cv2.CAP_DSHOW)
     #if not cam.isOpened():
     #         raise RuntimeError('No camera found at input '+ str(camID)) 
-    resWidth = 640
-    resHeight = 480
+  
+    exposure = parameterDictionary.get('exposure')
+    resWidth = parameterDictionary.get('resWidth')
+    resHeight = parameterDictionary.get('resHeight')
+    framerate = parameterDictionary.get('framerate')
+    
+    
     cam.set(cv2.CAP_PROP_FRAME_WIDTH, resWidth)
     cam.set(cv2.CAP_PROP_FRAME_HEIGHT, resHeight)
+    cam.set(cv2.CAP_PROP_EXPOSURE, exposure)
     fourcc = cv2.VideoWriter_fourcc(*'X264')
 
-    out = cv2.VideoWriter(filePath,fourcc, 25.0, (resWidth,resHeight))
+    out = cv2.VideoWriter(filePath,fourcc, framerate, (resWidth,resHeight))
     timestamps = [] #holds the timestamps 
 
     if cam.isOpened():
@@ -216,8 +223,11 @@ def mastersync(filename,camNum,camNames):
     return frameTable,timeTable,framerate,res_d
  
 #function to trim our videos 
-def videoEdit(vidList,out_base,ft):
+def videoEdit(vidList,out_base,ft,parameterDictionary):
     camList = list(ft.columns[1:len(vidList)+1]) #grab the camera identifiers from the data frame 
+    resWidth = parameterDictionary.get('resWidth')
+    resHeight = parameterDictionary.get('resHeight')
+    framerate = parameterDictionary.get('framerate')
     for vid,cam in zip(vidList,camList): #iterate in parallel through camera identifiers and matching videos
         print('Editing '+cam+' from ' +vid)
         #print(cam+'_'+out_path)
@@ -226,7 +236,7 @@ def videoEdit(vidList,out_base,ft):
         success, image = cap.read() #start reading frames
         fourcc = cv2.VideoWriter_fourcc(*'X264')
         out_path = cam+'_'+out_base #create an output path for the function
-        out = cv2.VideoWriter(out_path, fourcc, 25.0, (640,480)) #change resolution as needed
+        out = cv2.VideoWriter(out_path, fourcc, framerate, (resWidth,resHeight)) #change resolution as needed
         for frame in frametable: #start looking through the frames we need
             if frame == -1: #this is a buffer frame
                 image_new = np.zeros_like(image) #create a blank frame 
@@ -243,9 +253,10 @@ def videoEdit(vidList,out_base,ft):
         
        
 #function to run all these above functions together
-def runCams(iCam,path,sessionName):
+def runCams(iCam,path,sessionName,parameterDictionary):
     csvName = sessionName + '.csv' #create our csv filename
     clippedName = sessionName + '.mp4' #create our final video names
+    
     beginTime = time.time()
     n_cam = len(iCam) #number of cameras 
     camNum = range(n_cam) #a range for the number of cameras that we have
@@ -262,7 +273,7 @@ def runCams(iCam,path,sessionName):
     threads = []
     
     for n in camNum: #starts recording video, opens threads for each camera
-        t = camThread(camID[n],iCam[n],names[n],beginTime)
+        t = camThread(camID[n],iCam[n],names[n],beginTime,parameterDictionary)
         t.start()
        
         threads.append(t) 
@@ -315,7 +326,7 @@ def runCams(iCam,path,sessionName):
     print()
     print('Starting editing')
     #start editing the videos 
-    videoEdit(names,clippedName,ft)
+    videoEdit(names,clippedName,ft,parameterDictionary)
     
     
     print('all done')
@@ -344,16 +355,25 @@ def checkCams():
     return open_list
        
 class videoSetup(threading.Thread):
-     def __init__(self, camID):
+     def __init__(self, camID,parameterDictionary):
          self.camID = camID
+         self.parameterDictionary = parameterDictionary
          threading.Thread.__init__(self)
      def run(self):
         #print("Starting " + self.previewName)
-        self.record()
-     def record(self):
+         self.record(self.parameterDictionary)
+     def record(self,parameterDictionary):
+         exposure = parameterDictionary.get('exposure')
+         resWidth = parameterDictionary.get('resWidth')
+         resHeight = parameterDictionary.get('resHeight')
          camName = "Camera" + str(self.camID)
+         
          cv2.namedWindow(camName)
          cap = cv2.VideoCapture(self.camID,cv2.CAP_DSHOW)
+         cap.set(cv2.CAP_PROP_FRAME_WIDTH, resWidth)
+         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, resHeight)
+         cap.set(cv2.CAP_PROP_EXPOSURE, exposure)
+         #print('exposure',cap.get(cv2.CAP_PROP_EXPOSURE))
          #if not cap.isOpened():
           #   raise RuntimeError('No camera found at input '+ str(self.camID)) 
          while True:

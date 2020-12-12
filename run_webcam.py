@@ -4,12 +4,18 @@ Created on Mon Dec  7 14:16:45 2020
 
 @author: Rontc
 """
-
+import os
 import webcam 
 
 #-----------------------------------------------SESSION INFO
-#Step 1: Choose a file path and session name
-path = r'C:\Users\Rontc\Documents\GitHub\AlternateMocap\\' #add your file path to save data as r'filepath\', and for right now **include a second backslash at the end of your path**
+#Step 1: Choose a file path and session name   
+
+if os.getenv('COMPUTERNAME') == 'DESKTOP-DCG6K4F': #Jon Work PC
+    path = 'C:\\Users\\jonma\\Dropbox\\GitKrakenRepos\\AaronCherian'
+elif os.getenv('COMPUTERNAME') == 'AaronsLaptop': #Aaron Laptop
+    path = r'C:\Users\Rontc\Documents\GitHub\AlternateMocap\\' #add your file path to save data as r'filepath\', and for right now **include a second backslash at the end of your path**
+
+
 sessionName = 'test1_12_10' #create a session ID for output videos and CSV names
 exposure = -6
 resWidth = 640

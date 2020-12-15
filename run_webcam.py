@@ -12,17 +12,18 @@ import webcam
 
 if os.getenv('COMPUTERNAME') == 'DESKTOP-DCG6K4F': #Jon Work PC
     path = 'C:\\Users\\jonma\\Dropbox\\GitKrakenRepos\\AaronCherian'
-elif os.getenv('COMPUTERNAME') == 'AaronsLaptop': #Aaron Laptop
+elif os.getenv('COMPUTERNAME') == 'DESKTOP-DU6IM9B': #Aaron Laptop
     path = r'C:\Users\Rontc\Documents\GitHub\AlternateMocap\\' #add your file path to save data as r'filepath\', and for right now **include a second backslash at the end of your path**
 
 
 sessionName = 'test1_12_10' #create a session ID for output videos and CSV names
-exposure = -6
+exposure = -3
 resWidth = 640
 resHeight = 480
 framerate = 25
+codec = 'X264' #other codecs to try include H264, DIVX
 
-paramDict = {'exposure':exposure,"resWidth":resWidth,"resHeight":resHeight,'framerate':framerate}
+paramDict = {'exposure':exposure,"resWidth":resWidth,"resHeight":resHeight,'framerate':framerate,'codec':codec}
 
 #-----------------------------------------------DETECTION
 #Step 2: Cam Detection. Set TRUE to see a list of detected cameras and inputs. Set FALSE once you know your inputs
@@ -55,7 +56,7 @@ if cam_setup == True: #don't change this boolean by accident pls
 #Step 4: Set TRUE to start the recording process. 
 #Press ESCAPE to stop the recording process, and continue onto the time-syncing/editing process
 recording = True
-record_inputs = [1,2,3,4] #the USB input for each camera that you're using 
+record_inputs = [0] #the USB input for each camera that you're using 
 
 if recording == True:#don't change this boolean by accident pls
     if not record_inputs:

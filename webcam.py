@@ -49,12 +49,12 @@ def camPreview(previewName, camID, filePath,beginTime,parameterDictionary):
     resWidth = parameterDictionary.get('resWidth')
     resHeight = parameterDictionary.get('resHeight')
     framerate = parameterDictionary.get('framerate')
-    
+    codec = parameterDictionary.get('codec')
     
     cam.set(cv2.CAP_PROP_FRAME_WIDTH, resWidth)
     cam.set(cv2.CAP_PROP_FRAME_HEIGHT, resHeight)
     cam.set(cv2.CAP_PROP_EXPOSURE, exposure)
-    fourcc = cv2.VideoWriter_fourcc(*'X264')
+    fourcc = cv2.VideoWriter_fourcc(*codec)
 
     out = cv2.VideoWriter(filePath,fourcc, framerate, (resWidth,resHeight))
     timestamps = [] #holds the timestamps 
@@ -228,13 +228,14 @@ def videoEdit(vidList,out_base,ft,parameterDictionary):
     resWidth = parameterDictionary.get('resWidth')
     resHeight = parameterDictionary.get('resHeight')
     framerate = parameterDictionary.get('framerate')
+    codec = parameterDictionary.get('codec')
     for vid,cam in zip(vidList,camList): #iterate in parallel through camera identifiers and matching videos
         print('Editing '+cam+' from ' +vid)
         #print(cam+'_'+out_path)
         cap = cv2.VideoCapture(vid) #initialize OpenCV capture
         frametable = ft[cam] #grab the frames needed for that camera
         success, image = cap.read() #start reading frames
-        fourcc = cv2.VideoWriter_fourcc(*'X264')
+        fourcc = cv2.VideoWriter_fourcc(*codec)
         out_path = cam+'_'+out_base #create an output path for the function
         out = cv2.VideoWriter(out_path, fourcc, framerate, (resWidth,resHeight)) #change resolution as needed
         for frame in frametable: #start looking through the frames we need

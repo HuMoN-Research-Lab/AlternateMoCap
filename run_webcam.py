@@ -6,6 +6,8 @@ Created on Mon Dec  7 14:16:45 2020
 """
 import os
 import webcam 
+from tkinter import Tk
+from pathlib import Path
 
 #-----------------------------------------------SESSION INFO
 #Step 1: Choose a file path and session name   
@@ -16,7 +18,7 @@ elif os.getenv('COMPUTERNAME') == 'DESKTOP-DU6IM9B': #Aaron Laptop
     path = r'C:\Users\Rontc\Documents\GitHub\AlternateMocap\\' #add your file path to save data as r'filepath\', and for right now **include a second backslash at the end of your path**
 
 
-sessionName = 'test1_12_10' #create a session ID for output videos and CSV names
+sessionName = 'test1_12_16' #create a session ID for output videos and CSV names
 exposure = -3
 resWidth = 640
 resHeight = 480
@@ -57,6 +59,19 @@ if cam_setup == True: #don't change this boolean by accident pls
 #Press ESCAPE to stop the recording process, and continue onto the time-syncing/editing process
 recording = True
 record_inputs = [0] #the USB input for each camera that you're using 
+
+
+
+
+
+now = Path.cwd()
+inputnow = str(now)
+root = Tk()
+my_gui = webcam.pathFinder(root,inputnow)
+root.mainloop()
+
+
+path = my_gui.filepath()
 
 if recording == True:#don't change this boolean by accident pls
     if not record_inputs:

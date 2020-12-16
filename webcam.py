@@ -13,7 +13,8 @@ import numpy as np
 import pandas as pd
 import tkinter as tk
 #import tkMessageBox
-
+from tkinter import Tk, Label, Button, filedialog
+from pathlib import Path
 import sys 
 
 global beginTime
@@ -387,3 +388,31 @@ class videoSetup(threading.Thread):
              else:
                 break
          cv2.destroyWindow(camName)
+
+
+
+class pathFinder:
+    def __init__(self, master, filename):
+        self.master = master
+        self.filename = filename
+        master.title("Choose File Path")
+
+        self.label = Label(master, text= "Current working directory " + filename)
+        self.label.pack()
+
+        self.greet_button = Button(master, text="Browse", command=self.greet)
+        self.greet_button.pack()
+
+        self.close_button = Button(master, text="Close", command= self.destroy)
+        self.close_button.pack()
+
+    def greet(self):
+          self.filename = filedialog.askdirectory()
+          #print(self.filename)
+          self.label.config(text = self.filename)
+          #self.filename = filename
+          #return self.filename
+    def destroy(self):
+          self.master.destroy()
+    def filepath(self):
+          return self.filename

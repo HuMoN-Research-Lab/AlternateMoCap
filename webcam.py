@@ -240,7 +240,7 @@ def videoEdit(filepath, vidList,out_base,ft,parameterDictionary):
         frametable = ft[cam] #grab the frames needed for that camera
         success, image = cap.read() #start reading frames
         fourcc = cv2.VideoWriter_fourcc(*codec)
-        out_name = cam+'_'+out_base #create an output path for the function
+        out_name = out_base+'_' + cam + '.mp4'  #create an output path for the function
         syncedPath = filepath/'SyncedVideos'
         syncedPath.mkdir(parents = True, exist_ok = True)
         out_path = str(syncedPath/out_name)
@@ -333,7 +333,7 @@ def runCams(camInputs,filepath,sessionName,parameterDictionary):
     print()
     print('Starting editing')
     #start editing the videos 
-    videoEdit(filepath,videoNames,clippedName,ft,parameterDictionary)
+    videoEdit(filepath,videoNames,sessionName,ft,parameterDictionary)
     
     
     print('all done')

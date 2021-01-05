@@ -18,8 +18,8 @@ if not userPath:
 else: 
         filepath = userPath
         
-sessionName = 'test13_01_05' #create a session ID for output videos and CSV names
-exposure = -5
+sessionName = 'test19_01_05' #create a session ID for output videos and CSV names
+exposure = -4
 resWidth = 640
 resHeight = 480
 framerate = 25

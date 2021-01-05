@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 import tkinter as tk
 #import tkMessageBox
-
+from tqdm import tqdm 
 import sys 
 
 global beginTime
@@ -245,7 +245,7 @@ def videoEdit(filepath, vidList,out_base,ft,parameterDictionary):
         syncedPath.mkdir(parents = True, exist_ok = True)
         out_path = str(syncedPath/out_name)
         out = cv2.VideoWriter(out_path, fourcc, framerate, (resWidth,resHeight)) #change resolution as needed
-        for frame in frametable: #start looking through the frames we need
+        for frame in tqdm(frametable): #start looking through the frames we need
             if frame == -1: #this is a buffer frame
                 image_new = np.zeros_like(image) #create a blank frame 
                 out.write(image_new) #write that frame to the video

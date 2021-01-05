@@ -20,7 +20,7 @@ global beginTime
 
 
 #create a camera object that can be threaded
-class camThread(threading.Thread): 
+class CamThread(threading.Thread): 
     def __init__(self,camID,camInput,videoName,filePath,beginTime,parameterDictionary):
         threading.Thread.__init__(self)
         self.camID = camID
@@ -31,21 +31,21 @@ class camThread(threading.Thread):
         self.parameterDictionary = parameterDictionary
     def run(self):
         print("Starting " + self.camID)
-        camPreview(self.camID, self.camInput, self.videoName,self.filePath,self.beginTime,self.parameterDictionary)
+        CamPreview(self.camID, self.camInput, self.videoName,self.filePath,self.beginTime,self.parameterDictionary)
 
 #the recording function that each threaded camera object runs
-def camPreview(camID, camInput, videoName,filepath,beginTime,parameterDictionary):
+def CamPreview(camID, camInput, videoName,filepath,beginTime,parameterDictionary):
     #the flag is triggered when the user shuts down one webcam to shut down the rest. 
-    #normally we'd try to avoid global variables, but in this case it's 
+    #normally I'd try to avoid global variables, but in this case it's 
     #necessary, since each webcam runs as it's own object.
     global flag 
     flag = False 
     
-    cv2.namedWindow(camID)
-    cam = cv2.VideoCapture(camInput,cv2.CAP_DSHOW)
+    cv2.namedWindow(camID) #name the preview window for the camera its showing
+    cam = cv2.VideoCapture(camInput,cv2.CAP_DSHOW) #create the video capture object
     #if not cam.isOpened():
     #         raise RuntimeError('No camera found at input '+ str(camID)) 
-  
+    #pulling out all the dictionary paramters 
     exposure = parameterDictionary.get('exposure')
     resWidth = parameterDictionary.get('resWidth')
     resHeight = parameterDictionary.get('resHeight')
@@ -56,43 +56,43 @@ def camPreview(camID, camInput, videoName,filepath,beginTime,parameterDictionary
     cam.set(cv2.CAP_PROP_FRAME_HEIGHT, resHeight)
     cam.set(cv2.CAP_PROP_EXPOSURE, exposure)
     fourcc = cv2.VideoWriter_fourcc(*codec)
-    rawPath = filepath/'RawVideos'
+    rawPath = filepath/'RawVideos' #creating a RawVideos folder
     rawPath.mkdir(parents = True, exist_ok = True)
-    recordPath = str(rawPath/videoName)
+    recordPath = str(rawPath/videoName) #create a save path for each video to the RawVideos folders
     out = cv2.VideoWriter(recordPath,fourcc, framerate, (resWidth,resHeight))
-    timestamps = [] #holds the timestamps 
+    timeStamps = [] #holds the timestamps 
 
     if cam.isOpened():
-        rval, frame = cam.read()
+        success, frame = cam.read()
     else:
-        rval = False
+        success = False
 
-    while rval:
+    while success: #while the camera is opened, record the data until the escape button is hit 
         if flag: #when the flag is triggered, stop recording and dump the data
             with open(camID, 'wb') as f:
-               pickle.dump(timestamps, f)
+               pickle.dump(timeStamps, f)
             break
         
         cv2.imshow(camID, frame)
-        rval, frame = cam.read()
+        success, frame = cam.read()
         out.write(frame)
-        timestamps.append(time.time()-beginTime) #add each timestamp to the list
+        timeStamps.append(time.time()-beginTime) #add each timestamp to the list
     
         key = cv2.waitKey(20)
         if key == 27:  # exit on ESC
             flag = True #set flag to true to shut down all other webcams
             with open(camID, 'wb') as f:
-               pickle.dump(timestamps, f) #dump the data
+               pickle.dump(timeStamps, f) #dump the data
             break
     cv2.destroyWindow(camID)
 
 #this is how we sync our time frames, based on our recorded timestamps
-def mastersync(filename,camNum,camNames):    
+def TimeSync(filename,numCamRange,camNames):    
    
 #this function is how we find the closest frame to each time point
-    def closeNeighb(camera,point): 
-        idx = (np.abs(camera - point)).argmin() 
-        return idx
+    def CloseNeighb(camera,point): 
+        closestPoint = (np.abs(camera - point)).argmin() 
+        return closestPoint
     
     df = pd.read_csv (filename) #read our CSV file 
   
@@ -101,132 +101,132 @@ def mastersync(filename,camNum,camNames):
     stampList = [] #store timeframes for each camera
     beginList =[] #empty list to store the start times for each camera
     endList = [] #empty list to store the end times for each camera
-    for x in camNum: #for each camera that we have
+    for x in numCamRange: #for each camera that we have
         cam = arr[x,1:] #slice out the data for just that camera
-        start = cam[0] #set start point
+        startPoint = cam[0] #set start point
        
-     #this section below find the last non-NAN value for each camera   
-        stop_pt = -1
-        stop = cam[stop_pt]
-        while np.isnan(stop):
-            stop_pt -= 1
-            stop = cam[stop_pt]
+     #this section below finds the last non-NAN value for each camera (check if necessary with dataframe)
+        stopCheckIndex = -1 
+        stopPoint = cam[stopCheckIndex]
+        while np.isnan(stopPoint):
+            stopCheckIndex -= 1
+            stopPoint = cam[stopCheckIndex]
             
             
         stampList.append(cam) 
-        beginList.append(start) 
-        endList.append(stop)
+        beginList.append(startPoint) 
+        endList.append(stopPoint)
 
     
   
     
     #this section auto-finds the start and end points for our master timeline to the nearest second
-    begin = np.ceil(max(beginList)) #find where slowest camera started, round up, use that as the start point
-    end = np.floor(min(endList)) #find where the fastest camera ended, round down, use that as the end point
+    masterTimelineBegin = np.ceil(max(beginList)) #find where slowest camera started, round up, use that as the start point
+    masterTimelineEnd = np.floor(min(endList)) #find where the fastest camera ended, round down, use that as the end point
     #print('end',endList)
     #print('test',begin,end)    
 
     
-    int_arr= [] #list for storing frame rates for each camera
+    totalFrameRateIntvl= [] #list for storing frame rates for each camera
     
   
     n = 0; #counter for going through camera names
-    for x in camNum:
-      current_cam = stampList[x]  
+    for x in numCamRange:
+      currentCam = stampList[x]  
       #finds the closest point in each camera to the start and end points of our timeline
-      ss = closeNeighb(current_cam,begin) 
-      es = closeNeighb(current_cam,end)
-      print("using frames:", ss,"-",es,"for",camNames[n])
+      currentCamStart = CloseNeighb(currentCam,masterTimelineBegin) 
+      currentCamEnd = CloseNeighb(currentCam,masterTimelineEnd)
+      print("using frames:", currentCamStart,"-",currentCamEnd,"for",camNames[n])
       n +=1
-      cam_timeline = current_cam[ss:es] #grab the times from start to finish for each camera
-      interval = np.mean(np.diff(cam_timeline)) #calculate the interval between each frame and take the mean 
-      int_arr.append(interval) #add interval to list 
+      currentCamTimeline = currentCam[currentCamStart:currentCamEnd] #grab the times from start to finish for each camera
+      currentCamFrameInterval = np.mean(np.diff(currentCamTimeline)) #calculate the interval between each frame and take the mean 
+      totalFrameRateIntvl.append(currentCamFrameInterval) #add interval to list 
     
-    avg_int = np.mean(int_arr) #find the total average interval across all cameras
-    mt = np.arange(begin,end,avg_int) #build a master timeline with the average interval
+    totalAverageIntvl = np.mean(totalFrameRateIntvl) #find the total average interval across all cameras
+    masterTimeline = np.arange(masterTimelineBegin,masterTimelineEnd,totalAverageIntvl) #build a master timeline with the average interval
    
     #now we start the syncing process
   
-    framelist = mt #start a list of frames, with the first row being our master timeline
-    timelist = mt #start a list of timestamps,with the first row being our master timeline
+    frameList = masterTimeline #start a list of frames, with the first row being our master timeline
+    timeList = masterTimeline #start a list of timestamps,with the first row being our master timeline
  
-    del_num= []; #stores number of deleted frames/camera
-    buf_num= []; #stores number of buffered frames/camera
-    buf_per_list = []; #stores percentage of deleted frames/camera
-    del_per_list = []; #stores percentage of buffered frames/camera
+    delNum= []; #stores number of deleted frames/camera
+    bufNum= []; #stores number of buffered frames/camera
+    bufPercentList = []; #stores percentage of deleted frames/camera
+    delPercentList = []; #stores percentage of buffered frames/camera
     
     count = 0 #Keeps track of what frame we're on (I think?)
     n = 0; #I don't remember why I did this but I'm sure I'll figure it out later
 
-    for y in camNum:
-        this_cam = stampList[y]
-        st = []; #stored times
-        sf =[]; #stored frames
+    for y in numCamRange:
+        thisCam = stampList[y]
+        camTimes = []; #stored times
+        camFrames =[]; #stored frames
     
         count += 1
        
-        for z in mt: #for each point in the master timeline
-            sf_pt = closeNeighb(this_cam, z) #find the closest frame in this camera to each point of the master timeline
-            sf.append(sf_pt) #add that frame to the list
-            st = this_cam[sf] #find the time corresponding to this frame
+        for z in masterTimeline: #for each point in the master timeline
+            closestFrame = CloseNeighb(thisCam, z) #find the closest frame in this camera to each point of the master timeline
+            camFrames.append(closestFrame) #add that frame to the list
+            camTimes.append(thisCam[closestFrame]) #find the time corresponding to this frame
             
         print("starting detection:",camNames[n]) #now to start finding deleted/buffered slides
-        framelist = np.column_stack((framelist,sf)) #update our framelist with our new frames
-        timelist = np.column_stack((timelist,st)) #update our timelist 
+        frameList = np.column_stack((frameList,camFrames)) #update our framelist with our new frames
+        timeList = np.column_stack((timeList,camTimes)) #update our timelist 
     
         #start counters for the number of buffered and deleted slides
-        buf_count = 0;
-        del_count = 0;
+        bufCount = 0;
+        delCount = 0;
       
-        for i in range(0,len(sf)-1): 
-            dis = sf[i+1] - sf[i] #find the distance between adjacent frames
-            if dis == 1: #these frames are consecutive, do nothing
+        for i in range(0,len(camFrames)-1): 
+            distanceBetweenFrames = camFrames[i+1] - camFrames[i] #find the distance between adjacent frames
+            if distanceBetweenFrames == 1: #these frames are consecutive, do nothing
                 None 
-            elif dis == 0: #we have a buffered slide
-                buf_count += 1
-                #this section looks at our two timepoints, and finds the which point on the mater timeline is closest 
-                frame1 = abs(mt[i]-st[i])
-                frame2 = abs(mt[i+1]-st[i])
+            elif distanceBetweenFrames == 0: #we have a buffered slide
+                bufCount += 1
+                #this section looks at our two timepoints, and finds the which point on the master timeline is closest 
+                frame1 = abs(masterTimeline[i]-camTimes[i])
+                frame2 = abs(masterTimeline[i+1]-camTimes[i])
                 #finds which frame is closest, and sets the other frame as a buffer (indicated by the -1)
                 if frame1>frame2:
-                 framelist[i,count] = -1
-                 timelist[i,count] = -1
+                 frameList[i,count] = -1
+                 timeList[i,count] = -1
                 else:
-                 framelist[i+1,count] = -1;
-                 timelist[i+1,count] = -1;
-            elif dis > 1: #deletion
-               del_count += 1
+                 frameList[i+1,count] = -1;
+                 timeList[i+1,count] = -1;
+            elif distanceBetweenFrames > 1: #deletion
+               delCount += 1
             else:
                 
                 print("something else happened")
         #update and calculate our percentages and numbers for buffers/deletions
-        del_num.append(round(del_count,1))
-        buf_num.append(round(buf_count,1))
-        print(buf_count,len(framelist))
-        buf_per = (buf_count/len(framelist))*100
-        del_per = (del_count/len(framelist))*100
-        buf_per_list.append(round(buf_per,2))
-        del_per_list.append(round(del_per,2))
+        delNum.append(round(delCount,1))
+        bufNum.append(round(bufCount,1))
+        print(bufCount,len(frameList))
+        bufPercent = (bufCount/len(frameList))*100
+        delPercent = (delCount/len(frameList))*100
+        bufPercentList.append(round(bufPercent,2))
+        delPercentList.append(round(delPercent,2))
        
-        print(del_num,buf_num,buf_per_list,del_per_list)
-        print("deleted frames:",del_count)
-        print("buffered frames:",buf_count)
+        print(delNum,bufNum,bufPercentList,delPercentList)
+        print("deleted frames:",delCount)
+        print("buffered frames:",bufCount)
         n +=1
         
     #create our data frame for both times and frames    
-    frameTable = pd.DataFrame(framelist)   
-    col_list = ['Master Timeline'] + camNames
-    frameTable.columns = col_list
-    timeTable = pd.DataFrame(timelist)
-    timeTable.columns = col_list
-    framerate = 1/avg_int #calculates our framerate 
-    results = {'Cam':camNames,'#Del':del_num,'%Del':del_per_list,'#Buf':buf_num,'%Buf':buf_per_list}
-    res_d = pd.DataFrame(results,columns = ['Cam','#Del','%Del','#Buf','%Buf'])
+    frameTable = pd.DataFrame(frameList)   
+    columnNames = ['Master Timeline'] + camNames
+    frameTable.columns = columnNames
+    timeTable = pd.DataFrame(timeList)
+    timeTable.columns = columnNames
+    frameRate = 1/totalAverageIntvl #calculates our framerate 
+    results = {'Cam':camNames,'#Del':delNum,'%Del':delPercentList,'#Buf':bufNum,'%Buf':bufPercentList}
+    resultTable = pd.DataFrame(results,columns = ['Cam','#Del','%Del','#Buf','%Buf'])
   
-    return frameTable,timeTable,framerate,res_d
+    return frameTable,timeTable,frameRate,resultTable
  
 #function to trim our videos 
-def videoEdit(filepath, vidList,out_base,ft,parameterDictionary):
+def VideoEdit(filepath, vidList,sessionName,ft,parameterDictionary):
     camList = list(ft.columns[1:len(vidList)+1]) #grab the camera identifiers from the data frame 
     resWidth = parameterDictionary.get('resWidth')
     resHeight = parameterDictionary.get('resHeight')
@@ -237,18 +237,18 @@ def videoEdit(filepath, vidList,out_base,ft,parameterDictionary):
         #print(cam+'_'+out_path)
         rawPath = filepath/'RawVideos'
         cap = cv2.VideoCapture(str(rawPath/vid)) #initialize OpenCV capture
-        frametable = ft[cam] #grab the frames needed for that camera
+        frameTable = ft[cam] #grab the frames needed for that camera
         success, image = cap.read() #start reading frames
         fourcc = cv2.VideoWriter_fourcc(*codec)
-        out_name = out_base+'_' + cam + '.mp4'  #create an output path for the function
+        saveName = sessionName +'_' + cam + '.mp4' 
         syncedPath = filepath/'SyncedVideos'
         syncedPath.mkdir(parents = True, exist_ok = True)
-        out_path = str(syncedPath/out_name)
-        out = cv2.VideoWriter(out_path, fourcc, framerate, (resWidth,resHeight)) #change resolution as needed
-        for frame in tqdm(frametable): #start looking through the frames we need
+        savePath = str(syncedPath/saveName) #create an output path for the function
+        out = cv2.VideoWriter(savePath, fourcc, framerate, (resWidth,resHeight)) #change resolution as needed
+        for frame in tqdm(frameTable, leave = True): #start looking through the frames we need
             if frame == -1: #this is a buffer frame
-                image_new = np.zeros_like(image) #create a blank frame 
-                out.write(image_new) #write that frame to the video
+                blankFrame = np.zeros_like(image) #create a blank frame 
+                out.write(blankFrame) #write that frame to the video
             else:
                 cap.set(cv2.CAP_PROP_POS_FRAMES, frame) #set the video to the frame that we need
                 success, image = cap.read()
@@ -256,61 +256,60 @@ def videoEdit(filepath, vidList,out_base,ft,parameterDictionary):
          
         cap.release()
         out.release()
-        print('Saved '+out_path)
+        print('Saved '+ savePath)
         print()
         
        
 #function to run all these above functions together
-def runCams(camInputs,filepath,sessionName,parameterDictionary):
+def RunCams(camInputs,filepath,sessionName,parameterDictionary):
     csvName = sessionName + '.csv' #create our csv filename
-    clippedName = sessionName + '.mp4' #create our final video names
     
     beginTime = time.time()
-    n_cam = len(camInputs) #number of cameras 
-    camNum = range(n_cam) #a range for the number of cameras that we have
+    numCams = len(camInputs) #number of cameras 
+    numCamRange = range(numCams) #a range for the number of cameras that we have
     videoNames = []
-    camID = []
-    for x in camNum: #create names for each of the initial untrimmed videos 
-        ids = 'Cam{}'.format(x+1)
-        camID.append(ids) #creates IDs for each camera based on the number of cameras entered
-        vidName = 'cam{}.mp4'.format(x+1)
-        videoNames.append(vidName)    
+    camIDs = []
+    for x in numCamRange: #create names for each of the initial untrimmed videos 
+        singleCamID = 'Cam{}'.format(x+1)
+        camIDs.append(singleCamID) #creates IDs for each camera based on the number of cameras entered
+        singleVidName = 'cam{}.mp4'.format(x+1)
+        videoNames.append(singleVidName)    
     
     threads = []
     
-    for n in camNum: #starts recording video, opens threads for each camera
-        t = camThread(camID[n],camInputs[n],videoNames[n],filepath,beginTime,parameterDictionary)
-        t.start()
+    for n in numCamRange: #starts recording video, opens threads for each camera
+        camRecordings = CamThread(camIDs[n],camInputs[n],videoNames[n],filepath,beginTime,parameterDictionary)
+        camRecordings.start()
        
-        threads.append(t) 
+        threads.append(camRecordings) 
     
-    for t in threads:
-        t.join() #make sure that one thread ending doesn't immediately end all the others (before they can dump data in a pickle file)
+    for camRecordings in threads:
+        camRecordings.join() #make sure that one thread ending doesn't immediately end all the others (before they can dump data in a pickle file)
     
     print('finished')
     
-    dataList = [] 
+    timeStampList = [] 
     
-    for e in camNum: #open the saved pickle file for each camera, and add the timestamps to the dataList list
-      with open(camID[e], 'rb') as f:
-        cam_list = pickle.load(f)
-        dataList.append(cam_list)
+    for e in numCamRange: #open the saved pickle file for each camera, and add the timestamps to the dataList list
+      with open(camIDs[e], 'rb') as f:
+        camTimeList = pickle.load(f)
+        timeStampList.append(camTimeList)
     
-    a = {}  #our dictionary   
+    timeDictionary = {}  #our dictionary   
         
-    id_and_time = zip(camID,dataList)  
+    id_and_time = zip(camIDs,timeStampList)  
     
     for cam,data in id_and_time:
-        a[cam] = np.array(data)  #create a dictionary that holds the timestamps for each camera 
+        timeDictionary[cam] = np.array(data)  #create a dictionary that holds the timestamps for each camera 
     
         
-    df = pd.DataFrame.from_dict(a, orient = 'index') #create a data frame from this dictionary
-    df.transpose()
+    df = pd.DataFrame.from_dict(timeDictionary, orient = 'index') #create a data frame from this dictionary
+    dfT = df.transpose()
     csvPath = filepath/csvName
     df.to_csv(csvPath) #turn dataframe into a CSV
     
     
-    ft,tt,fr,rd = mastersync(csvPath,camNum,camID) #start the timesync process
+    frameTable,timeTable,frameRate,resultsTable = TimeSync(csvPath,numCamRange,camIDs) #start the timesync process
     
     #this message shows you your percentages and asks if you would like to continue or not. shuts down the program if no
     top = tk.Tk()
@@ -319,7 +318,7 @@ def runCams(camInputs,filepath,sessionName,parameterDictionary):
     def stop():
         top.destroy()
         sys.exit("Quitting Program")
-    label = tk.Label(text = rd)
+    label = tk.Label(text = resultsTable)
     button_go = tk.Button(top, text="Proceed", command= destroy)
     button_stop = tk.Button(top,text ='Quit',command = stop)
     
@@ -333,12 +332,12 @@ def runCams(camInputs,filepath,sessionName,parameterDictionary):
     print()
     print('Starting editing')
     #start editing the videos 
-    videoEdit(filepath,videoNames,sessionName,ft,parameterDictionary)
+    VideoEdit(filepath,videoNames,sessionName,frameTable,parameterDictionary)
     
     
     print('all done')
 
-def testDevice(source):
+def TestDevice(source):
    cap = cv2.VideoCapture(source,cv2.CAP_DSHOW) 
    #if cap is None or not cap.isOpened():
        #print('Warning: unable to open video source: ', source)
@@ -354,16 +353,16 @@ def testDevice(source):
    else:
         return None 
 
-def checkCams():
-    open_list = []
+def CheckCams():
+    openCamList = []
     for x in range(100):        
-       open_c = testDevice(x)
-       if open_c is not None:
-          open_list.append(open_c)
+       openCamera = TestDevice(x)
+       if openCamera is not None:
+          openCamList.append(openCamera)
     
-    return open_list
+    return openCamList
        
-class videoSetup(threading.Thread):
+class VideoSetup(threading.Thread):
      def __init__(self, camID,parameterDictionary):
          self.camID = camID
          self.parameterDictionary = parameterDictionary

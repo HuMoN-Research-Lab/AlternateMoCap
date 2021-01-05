@@ -18,7 +18,7 @@ if not userPath:
 else: 
         filepath = userPath
         
-sessionName = 'test19_01_05' #create a session ID for output videos and CSV names
+sessionName = 'test33_01_05' #create a session ID for output videos and CSV names
 exposure = -4
 resWidth = 640
 resHeight = 480
@@ -32,7 +32,7 @@ paramDict = {'exposure':exposure,"resWidth":resWidth,"resHeight":resHeight,'fram
 detect_cam_input = False
 
 if detect_cam_input == True: #don't change this boolean by accident pls
-  available_inputs = webcam.checkCams()
+  available_inputs = webcam.CheckCams()
   print("You have " + str(len(available_inputs)) + " cameras available at inputs " + str(available_inputs))
 
 #-----------------------------------------------SETUP
@@ -47,7 +47,7 @@ if cam_setup == True: #don't change this boolean by accident pls
         raise ValueError('Camera input list (setup_inputs) is empty')
     ulist = []
     for x in setup_inputs:
-        u = webcam.videoSetup(x,paramDict)
+        u = webcam.VideoSetup(x,paramDict)
         u.start()
         ulist.append(u)
         
@@ -58,7 +58,7 @@ if cam_setup == True: #don't change this boolean by accident pls
 #Step 4: Set TRUE to start the recording process. 
 #Press ESCAPE to stop the recording process, and continue onto the time-syncing/editing process
 recording = True
-record_inputs = [1,2] #the USB input for each camera that you're using 
+record_inputs = [1,2,3,4] #the USB input for each camera that you're using 
 
 
 
@@ -66,9 +66,9 @@ if recording == True:#don't change this boolean by accident pls
     recordPath = filepath/sessionName
     recordPath.mkdir(exist_ok='True')
     is_empty = not any(recordPath.iterdir())
-    if not is_empty:
-            raise RuntimeError(sessionName + ' folder already contains files. check session ID')
+    #if not is_empty:
+     #       raise RuntimeError(sessionName + ' folder already contains files. check session ID')
 
     if not record_inputs:
         raise ValueError('Camera input list (record_inputs) is empty')
-    webcam.runCams(record_inputs,recordPath,sessionName,paramDict) #press ESCAPE to end the recording
+    webcam.RunCams(record_inputs,recordPath,sessionName,paramDict) #press ESCAPE to end the recording

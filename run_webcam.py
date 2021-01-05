@@ -4,26 +4,22 @@ Created on Mon Dec  7 14:16:45 2020
 
 @author: Rontc
 """
-import os
+
 import webcam 
 from pathlib import Path
 
 #-----------------------------------------------SESSION INFO
 #Step 1: Choose a file path and session name   
 
-if os.getenv('COMPUTERNAME') == 'DESKTOP-DCG6K4F': #Jon Work PC
-    filepath = Path(r'C:\\Users\\jonma\\Dropbox\\GitKrakenRepos\\AaronCherian')
-#elif os.getenv('COMPUTERNAME') == 'DESKTOP-DU6IM9B': #Aaron Laptop
-#    filepath = Path(r'C:\Users\Rontc\Documents\GitHub\AlternateMocap\\') #add your file path to save data as r'filepath\', and for right now **include a second backslash at the end of your path**
-else:
-    userPath = ''#add custom path here if desired as r'[filepath]\', and for right now **you should have two backslashes at the end of your path**
-    if not userPath:
+
+userPath = '' #add custom path here if desired as r'[filepath]\', and for right now **you should have two backslashes at the end of your path**
+if not userPath:
         filepath = Path.cwd()
-    else: 
+else: 
         filepath = userPath
         
-sessionName = 'test4_12_17' #create a session ID for output videos and CSV names
-exposure = -3
+sessionName = 'test11_01_05' #create a session ID for output videos and CSV names
+exposure = -5
 resWidth = 640
 resHeight = 480
 framerate = 25
@@ -44,7 +40,7 @@ if detect_cam_input == True: #don't change this boolean by accident pls
 #if TRUE, add camera inputs to setup_inputs list below as [input1,input2,...], based on output from Step 2  
 #when testing, press 'q' to individually exit each feed. Camera input number associated with feed is displayed up top
 cam_setup = False  
-setup_inputs = [0,1]
+setup_inputs = [1,2,3,4]
 
 if cam_setup == True: #don't change this boolean by accident pls
     if not setup_inputs:
@@ -61,8 +57,8 @@ if cam_setup == True: #don't change this boolean by accident pls
 #-----------------------------------------------RECORDING
 #Step 4: Set TRUE to start the recording process. 
 #Press ESCAPE to stop the recording process, and continue onto the time-syncing/editing process
-recording = False
-record_inputs = [] #the USB input for each camera that you're using 
+recording = True
+record_inputs = [1,2] #the USB input for each camera that you're using 
 
 
 
@@ -70,8 +66,8 @@ if recording == True:#don't change this boolean by accident pls
     recordPath = filepath/sessionName
     recordPath.mkdir(exist_ok='True')
     is_empty = not any(recordPath.iterdir())
-    #if not is_empty:
-     #       raise RuntimeError(sessionName + ' folder contains files')
+    if not is_empty:
+            raise RuntimeError(sessionName + ' folder already contains files. check session ID')
 
     if not record_inputs:
         raise ValueError('Camera input list (record_inputs) is empty')

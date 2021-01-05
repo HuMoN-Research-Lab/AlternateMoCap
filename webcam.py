@@ -56,7 +56,9 @@ def camPreview(camID, camInput, videoName,filepath,beginTime,parameterDictionary
     cam.set(cv2.CAP_PROP_FRAME_HEIGHT, resHeight)
     cam.set(cv2.CAP_PROP_EXPOSURE, exposure)
     fourcc = cv2.VideoWriter_fourcc(*codec)
-    recordPath = str(filepath/videoName)
+    rawPath = filepath/'RawVideos'
+    rawPath.mkdir(parents = True, exist_ok = True)
+    recordPath = str(rawPath/videoName)
     out = cv2.VideoWriter(recordPath,fourcc, framerate, (resWidth,resHeight))
     timestamps = [] #holds the timestamps 
 
@@ -220,7 +222,7 @@ def mastersync(filename,camNum,camNames):
     framerate = 1/avg_int #calculates our framerate 
     results = {'Cam':camNames,'#Del':del_num,'%Del':del_per_list,'#Buf':buf_num,'%Buf':buf_per_list}
     res_d = pd.DataFrame(results,columns = ['Cam','#Del','%Del','#Buf','%Buf'])
-
+  
     return frameTable,timeTable,framerate,res_d
  
 #function to trim our videos 
@@ -233,12 +235,15 @@ def videoEdit(filepath, vidList,out_base,ft,parameterDictionary):
     for vid,cam in zip(vidList,camList): #iterate in parallel through camera identifiers and matching videos
         print('Editing '+cam+' from ' +vid)
         #print(cam+'_'+out_path)
-        cap = cv2.VideoCapture(str(filepath/vid)) #initialize OpenCV capture
+        rawPath = filepath/'RawVideos'
+        cap = cv2.VideoCapture(str(rawPath/vid)) #initialize OpenCV capture
         frametable = ft[cam] #grab the frames needed for that camera
         success, image = cap.read() #start reading frames
         fourcc = cv2.VideoWriter_fourcc(*codec)
         out_name = cam+'_'+out_base #create an output path for the function
-        out_path = str(filepath/out_name)
+        syncedPath = filepath/'SyncedVideos'
+        syncedPath.mkdir(parents = True, exist_ok = True)
+        out_path = str(syncedPath/out_name)
         out = cv2.VideoWriter(out_path, fourcc, framerate, (resWidth,resHeight)) #change resolution as needed
         for frame in frametable: #start looking through the frames we need
             if frame == -1: #this is a buffer frame
@@ -340,6 +345,7 @@ def testDevice(source):
    
    if cap.isOpened():
         print('Opened: ',source)
+        print('Exposure: '+ str(cap.get(cv2.CAP_PROP_EXPOSURE)))
         #time.sleep(3)
         cap.release()
         cv2.destroyAllWindows() 
@@ -354,6 +360,7 @@ def checkCams():
        open_c = testDevice(x)
        if open_c is not None:
           open_list.append(open_c)
+    
     return open_list
        
 class videoSetup(threading.Thread):

@@ -58,6 +58,7 @@ def CamPreview(camID, camInput, videoName,filepath,beginTime,parameterDictionary
     fourcc = cv2.VideoWriter_fourcc(*codec)
     rawPath = filepath/'RawVideos' #creating a RawVideos folder
     rawPath.mkdir(parents = True, exist_ok = True)
+    
     recordPath = str(rawPath/videoName) #create a save path for each video to the RawVideos folders
     out = cv2.VideoWriter(recordPath,fourcc, framerate, (resWidth,resHeight))
     timeStamps = [] #holds the timestamps 
@@ -240,7 +241,7 @@ def VideoEdit(filepath, vidList,sessionName,ft,parameterDictionary):
         frameTable = ft[cam] #grab the frames needed for that camera
         success, image = cap.read() #start reading frames
         fourcc = cv2.VideoWriter_fourcc(*codec)
-        saveName = sessionName +'_' + cam + '.mp4' 
+        saveName = sessionName +'_synced_' + cam + '.mp4' 
         syncedPath = filepath/'SyncedVideos'
         syncedPath.mkdir(parents = True, exist_ok = True)
         savePath = str(syncedPath/saveName) #create an output path for the function
@@ -272,7 +273,7 @@ def RunCams(camInputs,filepath,sessionName,parameterDictionary):
     for x in numCamRange: #create names for each of the initial untrimmed videos 
         singleCamID = 'Cam{}'.format(x+1)
         camIDs.append(singleCamID) #creates IDs for each camera based on the number of cameras entered
-        singleVidName = 'cam{}.mp4'.format(x+1)
+        singleVidName = 'raw_cam{}.mp4'.format(x+1)
         videoNames.append(singleVidName)    
     
     threads = []

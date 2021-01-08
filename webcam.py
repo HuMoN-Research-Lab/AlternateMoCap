@@ -88,52 +88,36 @@ def CamPreview(camID, camInput, videoName,filepath,beginTime,parameterDictionary
     cv2.destroyWindow(camID)
 
 #this is how we sync our time frames, based on our recorded timestamps
-def TimeSync(filename,numCamRange,camNames):    
-   
-#this function is how we find the closest frame to each time point
-    def CloseNeighb(camera,point): 
-        closestPoint = (np.abs(camera - point)).argmin() 
-        return closestPoint
-    
-    df = pd.read_csv (filename) #read our CSV file 
-  
-    arr = df.to_numpy()
-    #print(arr)
-    stampList = [] #store timeframes for each camera
-    beginList =[] #empty list to store the start times for each camera
-    endList = [] #empty list to store the end times for each camera
-    for x in numCamRange: #for each camera that we have
-        cam = arr[x,1:] #slice out the data for just that camera
-        startPoint = cam[0] #set start point
+def TimeSync(df,numCamRange,camNames):    
        
-     #this section below finds the last non-NAN value for each camera (check if necessary with dataframe)
-        stopCheckIndex = -1 
-        stopPoint = cam[stopCheckIndex]
-        while np.isnan(stopPoint):
-            stopCheckIndex -= 1
-            stopPoint = cam[stopCheckIndex]
-            
-            
-        stampList.append(cam) 
-        beginList.append(startPoint) 
-        endList.append(stopPoint)
+    def CloseNeighb(camera,point): 
+            closestPoint = (np.abs(camera - point)).argmin() 
+            return closestPoint
 
-    
-  
+    newFrame = df #read our CSV file 
+          
+
     
     #this section auto-finds the start and end points for our master timeline to the nearest second
-    masterTimelineBegin = np.ceil(max(beginList)) #find where slowest camera started, round up, use that as the start point
-    masterTimelineEnd = np.floor(min(endList)) #find where the fastest camera ended, round down, use that as the end point
-    #print('end',endList)
-    #print('test',begin,end)    
+    masterTimelineBegin = np.ceil(max(newFrame.iloc[0]))  
+    lastPoints = []
+    for name in camNames:
+        cameraLastPoint = newFrame[name][newFrame[name].last_valid_index()] #find the last non-nan value in each camera
+        lastPoints.append(cameraLastPoint)
+    
+    masterTimelineEnd = np.floor(min(lastPoints))  #find where the fastest camera ended, round down, use that as the end point
 
+
+    #print('end',endList)
+    print('intervals:',masterTimelineBegin,masterTimelineEnd)   
+    
     
     totalFrameRateIntvl= [] #list for storing frame rates for each camera
     
-  
+      
     n = 0; #counter for going through camera names
     for x in numCamRange:
-      currentCam = stampList[x]  
+      currentCam = newFrame[camNames[x]]
       #finds the closest point in each camera to the start and end points of our timeline
       currentCamStart = CloseNeighb(currentCam,masterTimelineBegin) 
       currentCamEnd = CloseNeighb(currentCam,masterTimelineEnd)
@@ -142,15 +126,15 @@ def TimeSync(filename,numCamRange,camNames):
       currentCamTimeline = currentCam[currentCamStart:currentCamEnd] #grab the times from start to finish for each camera
       currentCamFrameInterval = np.mean(np.diff(currentCamTimeline)) #calculate the interval between each frame and take the mean 
       totalFrameRateIntvl.append(currentCamFrameInterval) #add interval to list 
-    
+      print(camNames[x],currentCamStart,currentCamEnd)
     totalAverageIntvl = np.mean(totalFrameRateIntvl) #find the total average interval across all cameras
     masterTimeline = np.arange(masterTimelineBegin,masterTimelineEnd,totalAverageIntvl) #build a master timeline with the average interval
-   
+       
     #now we start the syncing process
-  
+    
     frameList = masterTimeline #start a list of frames, with the first row being our master timeline
     timeList = masterTimeline #start a list of timestamps,with the first row being our master timeline
- 
+     
     delNum= []; #stores number of deleted frames/camera
     bufNum= []; #stores number of buffered frames/camera
     bufPercentList = []; #stores percentage of deleted frames/camera
@@ -158,9 +142,9 @@ def TimeSync(filename,numCamRange,camNames):
     
     count = 0 #Keeps track of what frame we're on (I think?)
     n = 0; #I don't remember why I did this but I'm sure I'll figure it out later
-
+    
     for y in numCamRange:
-        thisCam = stampList[y]
+        thisCam = newFrame[camNames[y]]
         camTimes = []; #stored times
         camFrames =[]; #stored frames
     
@@ -223,9 +207,8 @@ def TimeSync(filename,numCamRange,camNames):
     frameRate = 1/totalAverageIntvl #calculates our framerate 
     results = {'Cam':camNames,'#Del':delNum,'%Del':delPercentList,'#Buf':bufNum,'%Buf':bufPercentList}
     resultTable = pd.DataFrame(results,columns = ['Cam','#Del','%Del','#Buf','%Buf'])
-  
-    return frameTable,timeTable,frameRate,resultTable
- 
+      
+    return frameTable,timeTable,frameRate,resultTable 
 #function to trim our videos 
 def VideoEdit(filepath, vidList,sessionName,ft,parameterDictionary):
     camList = list(ft.columns[1:len(vidList)+1]) #grab the camera identifiers from the data frame 
@@ -307,10 +290,10 @@ def RunCams(camInputs,filepath,sessionName,parameterDictionary):
     df = pd.DataFrame.from_dict(timeDictionary, orient = 'index') #create a data frame from this dictionary
     dfT = df.transpose()
     csvPath = filepath/csvName
-    df.to_csv(csvPath) #turn dataframe into a CSV
+    dfT.to_csv(csvPath) #turn dataframe into a CSV
     
     
-    frameTable,timeTable,frameRate,resultsTable = TimeSync(csvPath,numCamRange,camIDs) #start the timesync process
+    frameTable,timeTable,frameRate,resultsTable = TimeSync(dfT,numCamRange,camIDs) #start the timesync process
     
     #this message shows you your percentages and asks if you would like to continue or not. shuts down the program if no
     top = tk.Tk()

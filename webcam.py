@@ -12,9 +12,13 @@ import time
 import numpy as np
 import pandas as pd
 import tkinter as tk
+from tkinter import Tk,Label, Button, Frame
 #import tkMessageBox
 from tqdm import tqdm 
 import sys 
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+   
 
 global beginTime
 
@@ -88,6 +92,39 @@ def CamPreview(camID, camInput, videoName,filepath,beginTime,parameterDictionary
     cv2.destroyWindow(camID)
 
 #this is how we sync our time frames, based on our recorded timestamps
+class proceedGUI:
+    def __init__(self, master, results, figure):
+        self.master = master
+        self.results = results
+        self.figure = figure
+        master.title("Choose File Path")
+        
+      
+        bottom_frame = Frame(self.master, height = 1000)
+        bottom_frame.pack(side = tk.LEFT)
+        self.label = Label(bottom_frame, text= results)
+        self.label.pack(side = tk.TOP)
+        self.go_button = Button(bottom_frame, text="Proceed", command=self.destroy)
+        self.stop_button = Button(bottom_frame, text="Quit", command= self.stop)
+   
+        self.canvas = FigureCanvasTkAgg(self.figure, master=self.master)
+        self.canvas.draw()
+        self.canvas.get_tk_widget().pack(side=tk.LEFT, fill="both", expand=1)
+        
+        self.stop_button.pack(side = tk.RIGHT)
+        self.go_button.pack(side = tk.RIGHT)
+
+        
+
+        
+
+    def stop(self):
+          self.master.destroy()
+          sys.exit("Quitting Program")
+    
+    def destroy(self):
+          self.master.destroy()
+    
 def TimeSync(df,numCamRange,camNames):    
        
     def CloseNeighb(camera,point): 
@@ -207,9 +244,28 @@ def TimeSync(df,numCamRange,camNames):
     frameRate = 1/totalAverageIntvl #calculates our framerate 
     results = {'Cam':camNames,'#Del':delNum,'%Del':delPercentList,'#Buf':bufNum,'%Buf':bufPercentList}
     resultTable = pd.DataFrame(results,columns = ['Cam','#Del','%Del','#Buf','%Buf'])
-      
-    return frameTable,timeTable,frameRate,resultTable 
+    
+    #============================================== plot data
+    differenceFrame = newFrame.diff(axis = 0)
+    fpsFrame = differenceFrame.pow(-1)
+    fig = Figure(figsize = [10,10])
+    fig.patch.set_facecolor('#F0F0F0')
+    a = fig.add_subplot(221)
+    a.set_xlabel('Frame')
+    a.set_ylabel('Time(s)')
+    newFrame.plot(ax = a, title = 'Camera timestamps')
+    b = fig.add_subplot(222)
+    b.set_xlabel('Frame')
+    b.set_ylabel('Frame duration (s)')
+    differenceFrame.plot(ax = b, title = 'Camera frame duration') 
+    c = fig.add_subplot(223)
+    differenceFrame.plot.hist(ax = c, bins=6,alpha = .5, xlim = [0,.1], title = 'Frame interval distribution (s)')
+    d = fig.add_subplot(224)
+    fpsFrame.plot.hist(ax = d, bins=6,alpha = .5, xlim = [0,40], title = 'Frames per second distribution')
+    return frameTable,timeTable,frameRate,resultTable,fig 
 #function to trim our videos 
+
+
 def VideoEdit(filepath, vidList,sessionName,ft,parameterDictionary):
     camList = list(ft.columns[1:len(vidList)+1]) #grab the camera identifiers from the data frame 
     resWidth = parameterDictionary.get('resWidth')
@@ -293,24 +349,14 @@ def RunCams(camInputs,filepath,sessionName,parameterDictionary):
     dfT.to_csv(csvPath) #turn dataframe into a CSV
     
     
-    frameTable,timeTable,frameRate,resultsTable = TimeSync(dfT,numCamRange,camIDs) #start the timesync process
+    frameTable,timeTable,frameRate,resultsTable,plots = TimeSync(dfT,numCamRange,camIDs) #start the timesync process
     
     #this message shows you your percentages and asks if you would like to continue or not. shuts down the program if no
-    top = tk.Tk()
-    def destroy():
-        top.destroy()
-    def stop():
-        top.destroy()
-        sys.exit("Quitting Program")
-    label = tk.Label(text = resultsTable)
-    button_go = tk.Button(top, text="Proceed", command= destroy)
-    button_stop = tk.Button(top,text ='Quit',command = stop)
-    
-    label.pack()
-    button_go.pack()
-    button_stop.pack()
-    top.mainloop()
-    
+    root = Tk()
+
+    my_gui = proceedGUI(root,resultsTable,plots)
+    root.mainloop()
+
     
     
     print()

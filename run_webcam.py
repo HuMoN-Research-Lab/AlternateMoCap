@@ -18,8 +18,8 @@ if not userPath:
 else: 
         filepath = userPath
         
-sessionName = 'test9_01_08' #create a session ID for output videos and CSV names
-exposure = -4
+sessionName = 'test1_03_12' #create a session ID for output videos and CSV names
+exposure = -6
 resWidth = 640
 resHeight = 480
 framerate = 25
@@ -40,7 +40,7 @@ if detect_cam_input == True: #don't change this boolean by accident pls
 #if TRUE, add camera inputs to setup_inputs list below as [input1,input2,...], based on output from Step 2  
 #when testing, press 'q' to individually exit each feed. Camera input number associated with feed is displayed up top
 cam_setup = False  
-setup_inputs = [1,2,3,4]
+setup_inputs = [0]
 
 if cam_setup == True: #don't change this boolean by accident pls
     if not setup_inputs:
@@ -58,7 +58,7 @@ if cam_setup == True: #don't change this boolean by accident pls
 #Step 4: Set TRUE to start the recording process. 
 #Press ESCAPE to stop the recording process, and continue onto the time-syncing/editing process
 recording = True
-record_inputs = [1,2,3,4] #the USB input for each camera that you're using 
+record_inputs = [1,2,3] #the USB input for each camera that you're using 
 
 
 

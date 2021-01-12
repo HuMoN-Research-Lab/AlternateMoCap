@@ -149,6 +149,6 @@ def mastersync(filename):
     
     """
 
-n_cam= 4
-camNum = range(n_cam)
-g,h,j,k = mastersync('test8_12_1.csv')
+#n_cam= 4
+#camNum = range(n_cam)
+#g,h,j,k = mastersync('test8_12_1.csv')

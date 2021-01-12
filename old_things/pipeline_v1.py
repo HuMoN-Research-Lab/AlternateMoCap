@@ -144,7 +144,7 @@ def getTimes():
      
     
     #print(start, end)
-    top.destroy()
+u    top.destroy()
 
     
 button_calc = tk.Button(top, text="OK", command=getTimes)

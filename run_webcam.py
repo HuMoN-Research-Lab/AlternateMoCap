@@ -18,7 +18,7 @@ if not userPath:
 else: 
         filepath = userPath
         
-sessionName = 'test1_03_12' #create a session ID for output videos and CSV names
+sessionName = 'test6_01_21' #create a session ID for output videos and CSV names
 exposure = -6
 resWidth = 640
 resHeight = 480
@@ -58,7 +58,7 @@ if cam_setup == True: #don't change this boolean by accident pls
 #Step 4: Set TRUE to start the recording process. 
 #Press ESCAPE to stop the recording process, and continue onto the time-syncing/editing process
 recording = True
-record_inputs = [1,2,3] #the USB input for each camera that you're using 
+record_inputs = [1,2,3,4] #the USB input for each camera that you're using 
 
 
 

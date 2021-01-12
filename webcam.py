@@ -259,8 +259,10 @@ def TimeSync(df,numCamRange,camNames):
     b.set_ylabel('Frame duration (s)')
     differenceFrame.plot(ax = b, title = 'Camera frame duration') 
     c = fig.add_subplot(223)
+    c.set_xlabel('Time (s)')
     differenceFrame.plot.hist(ax = c, bins=6,alpha = .5, xlim = [0,.1], title = 'Frame interval distribution (s)')
     d = fig.add_subplot(224)
+    d.set_xlabel('Frames per second')
     fpsFrame.plot.hist(ax = d, bins=6,alpha = .5, xlim = [0,40], title = 'Frames per second distribution')
     return frameTable,timeTable,frameRate,resultTable,fig 
 #function to trim our videos 

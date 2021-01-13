@@ -18,7 +18,7 @@ if not userPath:
 else: 
         filepath = userPath
         
-sessionName = 'test6_01_21' #create a session ID for output videos and CSV names
+sessionName = 'test7_01_13' #create a session ID for output videos and CSV names
 exposure = -6
 resWidth = 640
 resHeight = 480
@@ -66,8 +66,8 @@ if recording == True:#don't change this boolean by accident pls
     recordPath = filepath/sessionName
     recordPath.mkdir(exist_ok='True')
     is_empty = not any(recordPath.iterdir())
-    #if not is_empty:
-     #       raise RuntimeError(sessionName + ' folder already contains files. check session ID')
+    if not is_empty:
+            raise RuntimeError(sessionName + ' folder already contains files. check session ID')
 
     if not record_inputs:
         raise ValueError('Camera input list (record_inputs) is empty')

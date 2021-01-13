@@ -149,7 +149,7 @@ def TimeSync(df,numCamRange,camNames):
     print('intervals:',masterTimelineBegin,masterTimelineEnd)   
     
     
-    totalFrameRateIntvl= [] #list for storing frame rates for each camera
+    totalFrameIntvl= [] #list for storing frame rates for each camera
     
       
     n = 0; #counter for going through camera names
@@ -162,9 +162,9 @@ def TimeSync(df,numCamRange,camNames):
       n +=1
       currentCamTimeline = currentCam[currentCamStart:currentCamEnd] #grab the times from start to finish for each camera
       currentCamFrameInterval = np.mean(np.diff(currentCamTimeline)) #calculate the interval between each frame and take the mean 
-      totalFrameRateIntvl.append(currentCamFrameInterval) #add interval to list 
-      print(camNames[x],currentCamStart,currentCamEnd)
-    totalAverageIntvl = np.mean(totalFrameRateIntvl) #find the total average interval across all cameras
+      totalFrameIntvl.append(currentCamFrameInterval) #add interval to list 
+      #print(camNames[x],currentCamStart,currentCamEnd)
+    totalAverageIntvl = np.mean(totalFrameIntvl) #find the total average interval across all cameras
     masterTimeline = np.arange(masterTimelineBegin,masterTimelineEnd,totalAverageIntvl) #build a master timeline with the average interval
        
     #now we start the syncing process
@@ -224,15 +224,15 @@ def TimeSync(df,numCamRange,camNames):
         #update and calculate our percentages and numbers for buffers/deletions
         delNum.append(round(delCount,1))
         bufNum.append(round(bufCount,1))
-        print(bufCount,len(frameList))
+        #print(bufCount,len(frameList))
         bufPercent = (bufCount/len(frameList))*100
         delPercent = (delCount/len(frameList))*100
         bufPercentList.append(round(bufPercent,2))
         delPercentList.append(round(delPercent,2))
        
-        print(delNum,bufNum,bufPercentList,delPercentList)
-        print("deleted frames:",delCount)
-        print("buffered frames:",bufCount)
+        #print(delNum,bufNum,bufPercentList,delPercentList)
+        #print("deleted frames:",delCount)
+        #print("buffered frames:",bufCount)
         n +=1
         
     #create our data frame for both times and frames    
@@ -241,9 +241,10 @@ def TimeSync(df,numCamRange,camNames):
     frameTable.columns = columnNames
     timeTable = pd.DataFrame(timeList)
     timeTable.columns = columnNames
+    totalFrameRate = [round(1/intvl,1) for intvl in totalFrameIntvl]
     frameRate = 1/totalAverageIntvl #calculates our framerate 
-    results = {'Cam':camNames,'#Del':delNum,'%Del':delPercentList,'#Buf':bufNum,'%Buf':bufPercentList}
-    resultTable = pd.DataFrame(results,columns = ['Cam','#Del','%Del','#Buf','%Buf'])
+    results = {'Cam':camNames,'#Del':delNum,'%Del':delPercentList,'#Buf':bufNum,'%Buf':bufPercentList,'FPS':totalFrameRate}
+    resultTable = pd.DataFrame(results,columns = ['Cam','#Del','%Del','#Buf','%Buf','FPS'])
     
     #============================================== plot data
     differenceFrame = newFrame.diff(axis = 0)

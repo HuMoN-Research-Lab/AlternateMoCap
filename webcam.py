@@ -80,7 +80,8 @@ def CamPreview(camID, camInput, videoName,filepath,beginTime,parameterDictionary
         
         cv2.imshow(camID, frame)
         success, frame = cam.read()
-        out.write(frame)
+        frame_sized = cv2.resize(frame,(resWidth,resHeight))
+        out.write(frame_sized)
         timeStamps.append(time.time()-beginTime) #add each timestamp to the list
     
         key = cv2.waitKey(20)
@@ -97,6 +98,7 @@ class proceedGUI:
         self.master = master
         self.results = results
         self.figure = figure
+        self.time = time
         master.title("Choose File Path")
         
       
@@ -186,7 +188,11 @@ def TimeSync(df,numCamRange,camNames):
         camFrames =[]; #stored frames
     
         count += 1
-       
+        #--------------Adjust each camera to start at the first point in the master timeline
+        beginFrame = CloseNeighb(thisCam,masterTimeline[0])
+        timeDif = masterTimeline[0] - thisCam[beginFrame]
+        thisCam = thisCam + timeDif
+        
         for z in masterTimeline: #for each point in the master timeline
             closestFrame = CloseNeighb(thisCam, z) #find the closest frame in this camera to each point of the master timeline
             camFrames.append(closestFrame) #add that frame to the list
@@ -195,6 +201,7 @@ def TimeSync(df,numCamRange,camNames):
         print("starting detection:",camNames[n]) #now to start finding deleted/buffered slides
         frameList = np.column_stack((frameList,camFrames)) #update our framelist with our new frames
         timeList = np.column_stack((timeList,camTimes)) #update our timelist 
+        
     
         #start counters for the number of buffered and deleted slides
         bufCount = 0;
@@ -353,14 +360,12 @@ def RunCams(camInputs,filepath,sessionName,parameterDictionary):
     
     
     frameTable,timeTable,frameRate,resultsTable,plots = TimeSync(dfT,numCamRange,camIDs) #start the timesync process
-    
     #this message shows you your percentages and asks if you would like to continue or not. shuts down the program if no
     root = Tk()
 
-    my_gui = proceedGUI(root,resultsTable,plots)
+    proceedGUI(root,resultsTable,plots)
     root.mainloop()
 
-    
     
     print()
     print('Starting editing')
@@ -369,7 +374,7 @@ def RunCams(camInputs,filepath,sessionName,parameterDictionary):
     
     
     print('all done')
-
+    
 def TestDevice(source):
    cap = cv2.VideoCapture(source,cv2.CAP_DSHOW) 
    #if cap is None or not cap.isOpened():

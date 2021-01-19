@@ -108,7 +108,7 @@ v = np.array(cam4_list)
 a = ({"Camera1":x, "Camera2":y, "Camera3":z, "Camera4":v})
 df = pd.DataFrame.from_dict(a, orient = 'index')
 df.transpose()
-df.to_csv(r"C:\Users\Rontc\Documents\HumonLab\alternate_mocap\v2\test1_11_16")
+#df.to_csv(r"C:\Users\Rontc\Documents\GitHub\AlternateMoCap\old_things")
 
 #test = np.row_stack((x, y))#
 #p.savez('test_now.csv', x,y)

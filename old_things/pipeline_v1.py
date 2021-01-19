@@ -35,8 +35,8 @@ def camPreview(previewName, camID, filePath):
     flag = False
     cv2.namedWindow(previewName)
     cam = cv2.VideoCapture(camID,cv2.CAP_DSHOW)
-    resWidth = 640
-    resHeight = 480
+    resWidth = 720
+    resHeight = 
     cam.set(cv2.CAP_PROP_FRAME_WIDTH, resWidth)
     cam.set(cv2.CAP_PROP_FRAME_HEIGHT, resHeight)
     fourcc = cv2.VideoWriter_fourcc(*'X264')
@@ -70,8 +70,8 @@ def camPreview(previewName, camID, filePath):
 #Edit the options in lines 70-73 as needed (change csvName and clippedName to prevent overwriting files)
 
 csv_path = r'C:\Users\Rontc\Documents\GitHub\AlternateMoCap\\' #add your file path to save a CSV as r'filepath\', and for right now **include a second backslash at the end of your path**
-csvName = 'test2_11_23.csv' #create a filename for the output CSV
-clippedName = 'test2_11_23.mp4' #create a base filename for the four edited videos (camera identifiers will be appended onto this base filename)
+csvName = 'testa_01_13.csv' #create a filename for the output CSV
+clippedName = 'testa_01_13.mp4' #create a base filename for the four edited videos (camera identifiers will be appended onto this base filename)
 rawList = ['cam1.mp4','cam2.mp4','cam3.mp4','cam4.mp4'] #create filenames for your raw videos,in order of camera
 
 
@@ -118,13 +118,13 @@ x = np.array(cam1_list)
 y = np.array(cam2_list)
 z = np.array(cam3_list)
 v = np.array(cam4_list)
-
+"""
 a = ({"Camera1":x, "Camera2":y, "Camera3":z, "Camera4":v})
 df = pd.DataFrame.from_dict(a, orient = 'index')
 df.transpose()
 df.to_csv(csv_path+csvName) #change this line to where you want to save a CSV file
 
-"""
+
 top = tk.Tk()
 message = tk.Label(text="Here's a look at your start/end times")
 start_end = df.iloc[0:4,[0,-1]]
@@ -162,7 +162,7 @@ button_calc.pack()
 
 
 top.mainloop()
-"""
+
 #intvl = pickle.loads(intDump)
 #print(user_start,user_end)
 
@@ -201,3 +201,4 @@ print('all done')
 #print(cam1_list)
 #print(cam2_list)
 
+"""

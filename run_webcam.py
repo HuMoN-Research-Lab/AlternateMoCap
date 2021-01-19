@@ -18,12 +18,12 @@ if not userPath:
 else: 
         filepath = userPath
         
-sessionName = 'test7_01_13' #create a session ID for output videos and CSV names
+sessionName = 'test11_01_19' #create a session ID for output videos and CSV names
 exposure = -6
-resWidth = 640
-resHeight = 480
-framerate = 25
-codec = 'X264' #other codecs to try include H264, DIVX
+resWidth = 960
+resHeight = 720
+framerate = 30
+codec = 'DIVX' #other codecs to try include H264, DIVX
 
 paramDict = {'exposure':exposure,"resWidth":resWidth,"resHeight":resHeight,'framerate':framerate,'codec':codec}
 
@@ -40,7 +40,7 @@ if detect_cam_input == True: #don't change this boolean by accident pls
 #if TRUE, add camera inputs to setup_inputs list below as [input1,input2,...], based on output from Step 2  
 #when testing, press 'q' to individually exit each feed. Camera input number associated with feed is displayed up top
 cam_setup = False  
-setup_inputs = [0]
+setup_inputs = [1,2]
 
 if cam_setup == True: #don't change this boolean by accident pls
     if not setup_inputs:
@@ -71,4 +71,4 @@ if recording == True:#don't change this boolean by accident pls
 
     if not record_inputs:
         raise ValueError('Camera input list (record_inputs) is empty')
-    webcam.RunCams(record_inputs,recordPath,sessionName,paramDict) #press ESCAPE to end the recording
+    table = webcam.RunCams(record_inputs,recordPath,sessionName,paramDict) #press ESCAPE to end the recording

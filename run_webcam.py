@@ -9,44 +9,43 @@ import webcam
 from pathlib import Path
 
 #-----------------------------------------------SESSION INFO
-#Step 1: Choose a file path and session name   
-
-
+#Choose a file path   
 userPath = '' #add custom path here if desired as r'[filepath]\', and for right now **you should have two backslashes at the end of your path**
 if not userPath:
         filepath = Path.cwd()
 else: 
         filepath = userPath
-        
-sessionName = 'test11_01_19' #create a session ID for output videos and CSV names
+
+#---------------------PARAMETERS
+#set all desired recording parameters for this session        
+sessionName = 'test5_01_19' #create a session ID for output videos and CSV names
 exposure = -6
 resWidth = 960
 resHeight = 720
 framerate = 30
 codec = 'DIVX' #other codecs to try include H264, DIVX
-
 paramDict = {'exposure':exposure,"resWidth":resWidth,"resHeight":resHeight,'framerate':framerate,'codec':codec}
 
-#-----------------------------------------------DETECTION
-#Step 2: Cam Detection. Set TRUE to see a list of detected cameras and inputs. Set FALSE once you know your inputs
-detect_cam_input = False
+#-------------------TASK SELECTION
+#Select whether to 'detect','setup', or 'record'
+#if testing or recording, select camera inputs to record with
+#if unsure of camera inputs, use 'detect' to see a list of detected cameras and inputs
+task = 'debug' 
+cam_inputs = [] #enter inputs as [input1, input2] i.e. [1,2,3,4]
 
-if detect_cam_input == True: #don't change this boolean by accident pls
+#-----------------------------------------------DETECT
+if task == 'detect': 
   available_inputs = webcam.CheckCams()
   print("You have " + str(len(available_inputs)) + " cameras available at inputs " + str(available_inputs))
 
 #-----------------------------------------------SETUP
-#Step 3: Set TRUE to see feeds from each camera. Set FALSE to skip this step
-#if TRUE, add camera inputs to setup_inputs list below as [input1,input2,...], based on output from Step 2  
 #when testing, press 'q' to individually exit each feed. Camera input number associated with feed is displayed up top
-cam_setup = False  
-setup_inputs = [1,2]
 
-if cam_setup == True: #don't change this boolean by accident pls
-    if not setup_inputs:
-        raise ValueError('Camera input list (setup_inputs) is empty')
+elif task == 'setup': #don't change this boolean by accident pls
+    if not cam_inputs:
+        raise ValueError('Camera input list (cam_inputs) is empty')
     ulist = []
-    for x in setup_inputs:
+    for x in cam_inputs:
         u = webcam.VideoSetup(x,paramDict)
         u.start()
         ulist.append(u)
@@ -54,21 +53,28 @@ if cam_setup == True: #don't change this boolean by accident pls
     for k in ulist:
         k.join()
 
-#-----------------------------------------------RECORDING
-#Step 4: Set TRUE to start the recording process. 
+#-----------------------------------------------RECORD
 #Press ESCAPE to stop the recording process, and continue onto the time-syncing/editing process
-recording = True
-record_inputs = [1,2,3,4] #the USB input for each camera that you're using 
 
-
-
-if recording == True:#don't change this boolean by accident pls
+elif task == 'record':#don't change this boolean by accident pls
     recordPath = filepath/sessionName
     recordPath.mkdir(exist_ok='True')
     is_empty = not any(recordPath.iterdir())
     if not is_empty:
             raise RuntimeError(sessionName + ' folder already contains files. check session ID')
 
-    if not record_inputs:
-        raise ValueError('Camera input list (record_inputs) is empty')
-    table = webcam.RunCams(record_inputs,recordPath,sessionName,paramDict) #press ESCAPE to end the recording
+    if not cam_inputs:
+        raise ValueError('Camera input list (cam_inputs) is empty')
+    table = webcam.RunCams(cam_inputs,recordPath,sessionName,paramDict) #press ESCAPE to end the recording
+    
+elif not task:
+    print('No task detected')
+
+
+elif task == 'debug':
+    recordPath = filepath/sessionName
+    webcam.DebugTime(sessionName,recordPath)
+
+    
+else:
+    print('Unrecognized task: please enter task as "detect","setup",or "record"')

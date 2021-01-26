@@ -7,6 +7,8 @@ Created on Mon Dec  7 14:16:45 2020
 
 import webcam 
 from pathlib import Path
+import datetime
+import os 
 
 #-----------------------------------------------SESSION INFO
 #Choose a file path   
@@ -17,24 +19,36 @@ else:
         filepath = userPath
 
 #---------------------PARAMETERS
-#set all desired recording parameters for this session        
-sessionName = 'test5_01_19' #create a session ID for output videos and CSV names
-exposure = -6
-resWidth = 960
-resHeight = 720
-framerate = 30
-codec = 'DIVX' #other codecs to try include H264, DIVX
-paramDict = {'exposure':exposure,"resWidth":resWidth,"resHeight":resHeight,'framerate':framerate,'codec':codec}
+sessionID =  '' #enter custom ID here
+
+if not sessionID: #if no custom ID is entered, one will be generated (as sesh[time of recording in hours:minutes:seconds]_[month]_[date])
+    sessionID = datetime.datetime.now().strftime("sesh%H%M%S_%m_%d")
+if os.getenv('COMPUTERNAME') == 'DESKTOP-DCG6K4F': #Jon's Work PC    
+    #set all desired recording parameters for this session        
+    #sessionID = 'test1_01_21' #create a session ID for output videos and CSV names
+    exposure = -6
+    resWidth = 960
+    resHeight = 720
+    framerate = 30
+    codec = 'DIVX' #other codecs to try include H264, DIVX
+    paramDict = {'exposure':exposure,"resWidth":resWidth,"resHeight":resHeight,'framerate':framerate,'codec':codec}
+else:
+    exposure = -6
+    resWidth = 960
+    resHeight = 720
+    framerate = 30
+    codec = 'DIVX' #other codecs to try include H264, DIVX
+    paramDict = {'exposure':exposure,"resWidth":resWidth,"resHeight":resHeight,'framerate':framerate,'codec':codec}
 
 #-------------------TASK SELECTION
 #Select whether to 'detect','setup', or 'record'
 #if testing or recording, select camera inputs to record with
 #if unsure of camera inputs, use 'detect' to see a list of detected cameras and inputs
 task = 'debug' 
-cam_inputs = [] #enter inputs as [input1, input2] i.e. [1,2,3,4]
+cam_inputs = [1] #enter inputs as [input1, input2] i.e. [1,2,3,4]
 
 #-----------------------------------------------DETECT
-if task == 'detect': 
+if task == 'setup': 
   available_inputs = webcam.CheckCams()
   print("You have " + str(len(available_inputs)) + " cameras available at inputs " + str(available_inputs))
 
@@ -57,23 +71,23 @@ elif task == 'setup': #don't change this boolean by accident pls
 #Press ESCAPE to stop the recording process, and continue onto the time-syncing/editing process
 
 elif task == 'record':#don't change this boolean by accident pls
-    recordPath = filepath/sessionName
+    recordPath = filepath/sessionID
     recordPath.mkdir(exist_ok='True')
     is_empty = not any(recordPath.iterdir())
     if not is_empty:
-            raise RuntimeError(sessionName + ' folder already contains files. check session ID')
+            raise RuntimeError(sessionID + ' folder already contains files. check session ID')
 
     if not cam_inputs:
         raise ValueError('Camera input list (cam_inputs) is empty')
-    table = webcam.RunCams(cam_inputs,recordPath,sessionName,paramDict) #press ESCAPE to end the recording
+    table = webcam.RunCams(cam_inputs,recordPath,sessionID,paramDict) #press ESCAPE to end the recording
     
 elif not task:
     print('No task detected')
 
 
 elif task == 'debug':
-    recordPath = filepath/sessionName
-    webcam.DebugTime(sessionName,recordPath)
+    recordPath = filepath/sessionID
+    webcam.DebugTime(sessionID,recordPath)
 
     
 else:

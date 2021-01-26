@@ -35,8 +35,9 @@ class CamThread(threading.Thread):
         self.parameterDictionary = parameterDictionary
     def run(self):
         print("Starting " + self.camID)
-        CamPreview(self.camID, self.camInput, self.videoName,self.filePath,self.beginTime,self.parameterDictionary)
-
+        self.timeStamps = CamPreview(self.camID, self.camInput, self.videoName,self.filePath,self.beginTime,self.parameterDictionary)
+    def getStamps(self):
+        return self.timeStamps
 #the recording function that each threaded camera object runs
 def CamPreview(camID, camInput, videoName,filepath,beginTime,parameterDictionary):
     #the flag is triggered when the user shuts down one webcam to shut down the rest. 
@@ -91,6 +92,7 @@ def CamPreview(camID, camInput, videoName,filepath,beginTime,parameterDictionary
                pickle.dump(timeStamps, f) #dump the data
             break
     cv2.destroyWindow(camID)
+    return timeStamps
 
 #this is how we sync our time frames, based on our recorded timestamps
 class proceedGUI:

@@ -9,6 +9,7 @@ import webcam
 from pathlib import Path
 import datetime
 import os 
+import cv2
 
 #-----------------------------------------------SESSION INFO
 #Choose a file path   
@@ -18,11 +19,17 @@ if not userPath:
 else: 
         filepath = userPath
 
+#------------------ROTATION DEFINITIONS
+rotate0 = None
+rotate90 = cv2.ROTATE_90_CLOCKWISE
+rotate180 = cv2.ROTATE_180
+rotate270 = cv2.ROTATE_90_COUNTERCLOCKWISE
+
 #---------------------PARAMETERS
 sessionID =  '' #enter custom ID here
 
 if not sessionID: #if no custom ID is entered, one will be generated (as sesh[time of recording in hours:minutes:seconds]_[month]_[date])
-    sessionID = datetime.datetime.now().strftime("sesh%H%M%S_%m_%d")
+    sessionID = datetime.datetime.now().strftime("sesh_%y_%m_%d_%H%M%S")
 if os.getenv('COMPUTERNAME') == 'DESKTOP-DCG6K4F': #Jon's Work PC    
     #set all desired recording parameters for this session        
     #sessionID = 'test1_01_21' #create a session ID for output videos and CSV names
@@ -32,23 +39,32 @@ if os.getenv('COMPUTERNAME') == 'DESKTOP-DCG6K4F': #Jon's Work PC
     framerate = 30
     codec = 'DIVX' #other codecs to try include H264, DIVX
     paramDict = {'exposure':exposure,"resWidth":resWidth,"resHeight":resHeight,'framerate':framerate,'codec':codec}
+    #for rotation inputs, specify a rotation for each camera as either: rotation0, rotation90, rotation180, or rotation270
+    #if rotating any camera, each camera needs to have a rotation input. i.e. [rotation90,rotation0,rotation0]
+    #if no rotations are needed, just have rotation_input = [] (an empty array)
+    rotation_input = []
 else:
     exposure = -6
-    resWidth = 960
-    resHeight = 720
+    resWidth = 640
+    resHeight = 480
     framerate = 30
     codec = 'DIVX' #other codecs to try include H264, DIVX
     paramDict = {'exposure':exposure,"resWidth":resWidth,"resHeight":resHeight,'framerate':framerate,'codec':codec}
-
+    rotation_input = []
 #-------------------TASK SELECTION
 #Select whether to 'detect','setup', or 'record'
 #if testing or recording, select camera inputs to record with
 #if unsure of camera inputs, use 'detect' to see a list of detected cameras and inputs
-task = 'debug' 
-cam_inputs = [1] #enter inputs as [input1, input2] i.e. [1,2,3,4]
+task = 'record' 
+cam_inputs = [1,2] #enter inputs as [input1, input2] i.e. [1,2,3,4]
 
+
+if rotation_input and not len(cam_inputs) == len(rotation_input):
+    raise ValueError('The number of camera inputs and rotation inputs does not match')
+if not rotation_input:
+    rotation_input = [None]*len(cam_inputs)
 #-----------------------------------------------DETECT
-if task == 'setup': 
+if task == 'detect': 
   available_inputs = webcam.CheckCams()
   print("You have " + str(len(available_inputs)) + " cameras available at inputs " + str(available_inputs))
 
@@ -59,8 +75,8 @@ elif task == 'setup': #don't change this boolean by accident pls
     if not cam_inputs:
         raise ValueError('Camera input list (cam_inputs) is empty')
     ulist = []
-    for x in cam_inputs:
-        u = webcam.VideoSetup(x,paramDict)
+    for x,y in zip(cam_inputs,rotation_input):
+        u = webcam.VideoSetup(x,paramDict,y)
         u.start()
         ulist.append(u)
         
@@ -79,7 +95,7 @@ elif task == 'record':#don't change this boolean by accident pls
 
     if not cam_inputs:
         raise ValueError('Camera input list (cam_inputs) is empty')
-    table = webcam.RunCams(cam_inputs,recordPath,sessionID,paramDict) #press ESCAPE to end the recording
+    table = webcam.RunCams(cam_inputs,recordPath,sessionID,paramDict,rotation_input) #press ESCAPE to end the recording
     
 elif not task:
     print('No task detected')

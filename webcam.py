@@ -25,7 +25,7 @@ global beginTime
 
 #create a camera object that can be threaded
 class CamThread(threading.Thread): 
-    def __init__(self,camID,camInput,videoName,filePath,beginTime,parameterDictionary):
+    def __init__(self,camID,camInput,videoName,filePath,beginTime,parameterDictionary,rotationState):
         threading.Thread.__init__(self)
         self.camID = camID
         self.camInput = camInput
@@ -33,13 +33,14 @@ class CamThread(threading.Thread):
         self.filePath = filePath
         self.beginTime = beginTime
         self.parameterDictionary = parameterDictionary
+        self.rotationState = rotationState
     def run(self):
         print("Starting " + self.camID)
-        self.timeStamps = CamPreview(self.camID, self.camInput, self.videoName,self.filePath,self.beginTime,self.parameterDictionary)
+        self.timeStamps = CamPreview(self.camID, self.camInput, self.videoName,self.filePath,self.beginTime,self.parameterDictionary,self.rotationState)
     def getStamps(self):
         return self.timeStamps
 #the recording function that each threaded camera object runs
-def CamPreview(camID, camInput, videoName,filepath,beginTime,parameterDictionary):
+def CamPreview(camID, camInput, videoName,filepath,beginTime,parameterDictionary,rotationState):
     #the flag is triggered when the user shuts down one webcam to shut down the rest. 
     #normally I'd try to avoid global variables, but in this case it's 
     #necessary, since each webcam runs as it's own object.
@@ -63,7 +64,9 @@ def CamPreview(camID, camInput, videoName,filepath,beginTime,parameterDictionary
     fourcc = cv2.VideoWriter_fourcc(*codec)
     rawPath = filepath/'RawVideos' #creating a RawVideos folder
     rawPath.mkdir(parents = True, exist_ok = True)
-    
+    width = cam.get(cv2.CAP_PROP_FRAME_WIDTH)
+    height = cam.get(cv2.CAP_PROP_FRAME_HEIGHT)
+    print('width:',width, 'height:',height)
     recordPath = str(rawPath/videoName) #create a save path for each video to the RawVideos folders
     out = cv2.VideoWriter(recordPath,fourcc, framerate, (resWidth,resHeight))
     timeStamps = [] #holds the timestamps 
@@ -78,10 +81,12 @@ def CamPreview(camID, camInput, videoName,filepath,beginTime,parameterDictionary
             with open(camID, 'wb') as f:
                pickle.dump(timeStamps, f)
             break
-        
-        cv2.imshow(camID, frame)
         success, frame = cam.read()
+        if rotationState is not None:
+           frame = cv2.rotate(frame,rotateCode = rotationState)
+        cv2.imshow(camID, frame)
         frame_sized = cv2.resize(frame,(resWidth,resHeight))
+        #frame_sized = frame 
         out.write(frame_sized)
         timeStamps.append(time.time()-beginTime) #add each timestamp to the list
     
@@ -312,7 +317,7 @@ def VideoEdit(filepath, vidList,sessionName,ft,parameterDictionary):
         
        
 #function to run all these above functions together
-def RunCams(camInputs,filepath,sessionName,parameterDictionary):
+def RunCams(camInputs,filepath,sessionName,parameterDictionary,rotationInput):
     csvName = sessionName + '.csv' #create our csv filename
     
     beginTime = time.time()
@@ -329,7 +334,7 @@ def RunCams(camInputs,filepath,sessionName,parameterDictionary):
     threads = []
     
     for n in numCamRange: #starts recording video, opens threads for each camera
-        camRecordings = CamThread(camIDs[n],camInputs[n],videoNames[n],filepath,beginTime,parameterDictionary)
+        camRecordings = CamThread(camIDs[n],camInputs[n],videoNames[n],filepath,beginTime,parameterDictionary,rotationInput[n])
         camRecordings.start()
        
         threads.append(camRecordings) 
@@ -402,14 +407,15 @@ def CheckCams():
     return openCamList
        
 class VideoSetup(threading.Thread):
-     def __init__(self, camID,parameterDictionary):
+     def __init__(self, camID,parameterDictionary,rotNum):
          self.camID = camID
          self.parameterDictionary = parameterDictionary
+         self.rotNum = rotNum
          threading.Thread.__init__(self)
      def run(self):
         #print("Starting " + self.previewName)
-         self.record(self.parameterDictionary)
-     def record(self,parameterDictionary):
+         self.record(self.parameterDictionary,self.rotNum)
+     def record(self,parameterDictionary,rotNum):
          exposure = parameterDictionary.get('exposure')
          resWidth = parameterDictionary.get('resWidth')
          resHeight = parameterDictionary.get('resHeight')
@@ -426,6 +432,8 @@ class VideoSetup(threading.Thread):
          while True:
              ret1,frame1 = cap.read()
              if ret1 ==True:
+                 if rotNum is not None:
+                   frame1 = cv2.rotate(frame1,rotateCode = rotNum)
                  cv2.imshow(camName,frame1)
                  if cv2.waitKey(1) & 0xFF== ord('q'):
                     break 

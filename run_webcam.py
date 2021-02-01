@@ -9,7 +9,7 @@ import webcam
 from pathlib import Path
 import datetime
 import os 
-import cv2
+
 
 #-----------------------------------------------SESSION INFO
 #Choose a file path   
@@ -21,9 +21,9 @@ else:
 
 #------------------ROTATION DEFINITIONS
 rotate0 = None
-rotate90 = cv2.ROTATE_90_CLOCKWISE
-rotate180 = cv2.ROTATE_180
-rotate270 = cv2.ROTATE_90_COUNTERCLOCKWISE
+rotate90 = 0
+rotate180 = 1
+rotate270 = 2
 
 #---------------------PARAMETERS
 sessionID =  '' #enter custom ID here
@@ -45,12 +45,12 @@ if os.getenv('COMPUTERNAME') == 'DESKTOP-DCG6K4F': #Jon's Work PC
     rotation_input = []
 else:
     exposure = -6
-    resWidth = 640
-    resHeight = 480
+    resWidth = 1080
+    resHeight = 720
     framerate = 30
     codec = 'DIVX' #other codecs to try include H264, DIVX
     paramDict = {'exposure':exposure,"resWidth":resWidth,"resHeight":resHeight,'framerate':framerate,'codec':codec}
-    rotation_input = []
+    rotation_input = [rotate90,rotate180]
 #-------------------TASK SELECTION
 #Select whether to 'detect','setup', or 'record'
 #if testing or recording, select camera inputs to record with

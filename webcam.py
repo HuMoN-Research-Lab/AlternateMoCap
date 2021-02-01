@@ -25,7 +25,7 @@ global beginTime
 
 #create a camera object that can be threaded
 class CamThread(threading.Thread): 
-    def __init__(self,camID,camInput,videoName,filePath,beginTime,parameterDictionary,rotationState):
+    def __init__(self,camID,camInput,videoName,filePath,beginTime,parameterDictionary):
         threading.Thread.__init__(self)
         self.camID = camID
         self.camInput = camInput
@@ -33,14 +33,14 @@ class CamThread(threading.Thread):
         self.filePath = filePath
         self.beginTime = beginTime
         self.parameterDictionary = parameterDictionary
-        self.rotationState = rotationState
+
     def run(self):
         print("Starting " + self.camID)
-        self.timeStamps = CamPreview(self.camID, self.camInput, self.videoName,self.filePath,self.beginTime,self.parameterDictionary,self.rotationState)
+        self.timeStamps = CamPreview(self.camID, self.camInput, self.videoName,self.filePath,self.beginTime,self.parameterDictionary)
     def getStamps(self):
         return self.timeStamps
 #the recording function that each threaded camera object runs
-def CamPreview(camID, camInput, videoName,filepath,beginTime,parameterDictionary,rotationState):
+def CamPreview(camID, camInput, videoName,filepath,beginTime,parameterDictionary):
     #the flag is triggered when the user shuts down one webcam to shut down the rest. 
     #normally I'd try to avoid global variables, but in this case it's 
     #necessary, since each webcam runs as it's own object.
@@ -82,8 +82,7 @@ def CamPreview(camID, camInput, videoName,filepath,beginTime,parameterDictionary
                pickle.dump(timeStamps, f)
             break
         success, frame = cam.read()
-        if rotationState is not None:
-           frame = cv2.rotate(frame,rotateCode = rotationState)
+       
         cv2.imshow(camID, frame)
         frame_sized = cv2.resize(frame,(resWidth,resHeight))
         #frame_sized = frame 
@@ -282,13 +281,13 @@ def TimeSync(df,numCamRange,camNames):
 #function to trim our videos 
 
 
-def VideoEdit(filepath, vidList,sessionName,ft,parameterDictionary):
+def VideoEdit(filepath, vidList,sessionName,ft,parameterDictionary,rotationState,numCamRange):
     camList = list(ft.columns[1:len(vidList)+1]) #grab the camera identifiers from the data frame 
     resWidth = parameterDictionary.get('resWidth')
     resHeight = parameterDictionary.get('resHeight')
     framerate = parameterDictionary.get('framerate')
     codec = parameterDictionary.get('codec')
-    for vid,cam in zip(vidList,camList): #iterate in parallel through camera identifiers and matching videos
+    for vid,cam,camNum in zip(vidList,camList,numCamRange): #iterate in parallel through camera identifiers and matching videos
         print('Editing '+cam+' from ' +vid)
         #print(cam+'_'+out_path)
         rawPath = filepath/'RawVideos'
@@ -308,6 +307,9 @@ def VideoEdit(filepath, vidList,sessionName,ft,parameterDictionary):
             else:
                 cap.set(cv2.CAP_PROP_POS_FRAMES, frame) #set the video to the frame that we need
                 success, image = cap.read()
+                if rotationState[camNum] is not None:   
+                   image = cv2.rotate(image,rotateCode = rotationState[camNum])
+                   image = cv2.resize(image,(resWidth,resHeight))
                 out.write(image)
          
         cap.release()
@@ -334,7 +336,7 @@ def RunCams(camInputs,filepath,sessionName,parameterDictionary,rotationInput):
     threads = []
     
     for n in numCamRange: #starts recording video, opens threads for each camera
-        camRecordings = CamThread(camIDs[n],camInputs[n],videoNames[n],filepath,beginTime,parameterDictionary,rotationInput[n])
+        camRecordings = CamThread(camIDs[n],camInputs[n],videoNames[n],filepath,beginTime,parameterDictionary)
         camRecordings.start()
        
         threads.append(camRecordings) 
@@ -376,7 +378,7 @@ def RunCams(camInputs,filepath,sessionName,parameterDictionary,rotationInput):
     print()
     print('Starting editing')
     #start editing the videos 
-    VideoEdit(filepath,videoNames,sessionName,frameTable,parameterDictionary)
+    VideoEdit(filepath,videoNames,sessionName,frameTable,parameterDictionary,rotationInput,numCamRange)
     
     
     print('all done')

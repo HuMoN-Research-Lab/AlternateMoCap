@@ -15,6 +15,7 @@ import tkinter as tk
 from tkinter import Tk,Label, Button, Frame
 #import tkMessageBox
 from tqdm import tqdm 
+import imutils
 import sys 
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -109,7 +110,7 @@ class proceedGUI:
       
         bottom_frame = Frame(self.master, height = 1000)
         bottom_frame.pack(side = tk.LEFT)
-        self.label = Label(bottom_frame, text= results)
+        self.label = Label(bottom_frame, text= results.to_string(index = False))
         self.label.pack(side = tk.TOP)
         self.go_button = Button(bottom_frame, text="Proceed", command=self.destroy)
         self.stop_button = Button(bottom_frame, text="Quit", command= self.stop)
@@ -286,6 +287,8 @@ def VideoEdit(filepath, vidList,sessionName,ft,parameterDictionary,rotationState
     resWidth = parameterDictionary.get('resWidth')
     resHeight = parameterDictionary.get('resHeight')
     framerate = parameterDictionary.get('framerate')
+    trueWidth = resWidth
+    trueHeight = resHeight
     codec = parameterDictionary.get('codec')
     for vid,cam,camNum in zip(vidList,camList,numCamRange): #iterate in parallel through camera identifiers and matching videos
         print('Editing '+cam+' from ' +vid)
@@ -299,19 +302,31 @@ def VideoEdit(filepath, vidList,sessionName,ft,parameterDictionary,rotationState
         syncedPath = filepath/'SyncedVideos'
         syncedPath.mkdir(parents = True, exist_ok = True)
         savePath = str(syncedPath/saveName) #create an output path for the function
+        if rotationState[camNum] == 90 or rotationState[camNum] == 270:
+            tempHeight = resHeight
+            resHeight = resWidth
+            resWidth = tempHeight
+            #print(rotationState[camNum], resHeight, resWidth)
+   
         out = cv2.VideoWriter(savePath, fourcc, framerate, (resWidth,resHeight)) #change resolution as needed
         for frame in tqdm(frameTable, leave = True): #start looking through the frames we need
             if frame == -1: #this is a buffer frame
                 blankFrame = np.zeros_like(image) #create a blank frame 
+                if rotationState[camNum] is not None:
+                   blankFrame = imutils.rotate_bound(blankFrame, angle= rotationState[camNum])
+                   #image = cv2.rotate(image,rotateCode = rotationState[camNum])
+                   image = cv2.resize(image,(resWidth,resHeight))
                 out.write(blankFrame) #write that frame to the video
             else:
                 cap.set(cv2.CAP_PROP_POS_FRAMES, frame) #set the video to the frame that we need
                 success, image = cap.read()
-                if rotationState[camNum] is not None:   
-                   image = cv2.rotate(image,rotateCode = rotationState[camNum])
+                if rotationState[camNum] is not None:
+                   image = imutils.rotate_bound(image, angle= rotationState[camNum])
+                   #image = cv2.rotate(image,rotateCode = rotationState[camNum])
                    image = cv2.resize(image,(resWidth,resHeight))
                 out.write(image)
-         
+        resWidth = trueWidth
+        resHeight = trueHeight
         cap.release()
         out.release()
         print('Saved '+ savePath)
@@ -371,7 +386,7 @@ def RunCams(camInputs,filepath,sessionName,parameterDictionary,rotationInput):
     #this message shows you your percentages and asks if you would like to continue or not. shuts down the program if no
     root = Tk()
 
-    proceedGUI(root,resultsTable,plots)
+    proceed = proceedGUI(root,resultsTable,plots)
     root.mainloop()
 
     
@@ -435,9 +450,10 @@ class VideoSetup(threading.Thread):
              ret1,frame1 = cap.read()
              if ret1 ==True:
                  if rotNum is not None:
-                   frame1 = cv2.rotate(frame1,rotateCode = rotNum)
+                   frame1 = imutils.rotate_bound(frame1, angle= rotNum)
                  cv2.imshow(camName,frame1)
-                 if cv2.waitKey(1) & 0xFF== ord('q'):
+                 if cv2.waitKey(1) & 0xFF== 27:
+                     # == ord('q') for q
                     break 
          
              else:

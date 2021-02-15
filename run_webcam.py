@@ -10,6 +10,12 @@ from pathlib import Path
 import datetime
 import os 
 
+#-------------------TASK SELECTION
+#Select whether to 'detect','setup', or 'record'
+#if testing or recording, select camera inputs to record with
+#if unsure of camera inputs, use 'detect' to see a list of detected cameras and inputs
+task = 'record' 
+cam_inputs = [1,2] #enter inputs as [input1, input2] i.e. [1,2,3,4]
 
 #-----------------------------------------------SESSION INFO
 #Choose a file path   
@@ -21,9 +27,9 @@ else:
 
 #------------------ROTATION DEFINITIONS
 rotate0 = None
-rotate90 = 0
-rotate180 = 1
-rotate270 = 2
+rotate90 = 90
+rotate180 = 180
+rotate270 = 270
 
 #---------------------PARAMETERS
 sessionID =  '' #enter custom ID here
@@ -45,20 +51,13 @@ if os.getenv('COMPUTERNAME') == 'DESKTOP-DCG6K4F': #Jon's Work PC
     rotation_input = []
 else:
     exposure = -6
-    resWidth = 1080
+    resWidth = 960
     resHeight = 720
     framerate = 30
     codec = 'DIVX' #other codecs to try include H264, DIVX
     paramDict = {'exposure':exposure,"resWidth":resWidth,"resHeight":resHeight,'framerate':framerate,'codec':codec}
-    rotation_input = [rotate90,rotate180]
-#-------------------TASK SELECTION
-#Select whether to 'detect','setup', or 'record'
-#if testing or recording, select camera inputs to record with
-#if unsure of camera inputs, use 'detect' to see a list of detected cameras and inputs
-task = 'record' 
-cam_inputs = [1,2] #enter inputs as [input1, input2] i.e. [1,2,3,4]
-
-
+    rotation_input = [rotate270,rotate0]
+#-----------------------------------------------ROTATION
 if rotation_input and not len(cam_inputs) == len(rotation_input):
     raise ValueError('The number of camera inputs and rotation inputs does not match')
 if not rotation_input:
@@ -70,7 +69,7 @@ if task == 'detect':
 
 #-----------------------------------------------SETUP
 #when testing, press 'q' to individually exit each feed. Camera input number associated with feed is displayed up top
-
+        
 elif task == 'setup': #don't change this boolean by accident pls
     if not cam_inputs:
         raise ValueError('Camera input list (cam_inputs) is empty')
@@ -82,13 +81,13 @@ elif task == 'setup': #don't change this boolean by accident pls
         
     for k in ulist:
         k.join()
-
+        
 #-----------------------------------------------RECORD
 #Press ESCAPE to stop the recording process, and continue onto the time-syncing/editing process
 
 elif task == 'record':#don't change this boolean by accident pls
     recordPath = filepath/sessionID
-    recordPath.mkdir(exist_ok='True')
+    recordPath.mkdir(exist_ok='True')   
     is_empty = not any(recordPath.iterdir())
     if not is_empty:
             raise RuntimeError(sessionID + ' folder already contains files. check session ID')
@@ -96,7 +95,6 @@ elif task == 'record':#don't change this boolean by accident pls
     if not cam_inputs:
         raise ValueError('Camera input list (cam_inputs) is empty')
     table = webcam.RunCams(cam_inputs,recordPath,sessionID,paramDict,rotation_input) #press ESCAPE to end the recording
-    
 elif not task:
     print('No task detected')
 
